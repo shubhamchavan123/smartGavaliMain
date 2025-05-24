@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   NotificationService notificationService = NotificationService();
-  // final GetServerKey _getServerKey = GetServerKey();
+  final GetServerKey _getServerKey = GetServerKey();
 
 
 
@@ -111,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> getServiceToken() async {
-    // String serverToken = await _getServerKey.getServerKeyToken();
-    // print("Server Token => $serverToken");
+    String serverToken = await _getServerKey.getServerKeyToken();
+    print("Server Token => $serverToken");
   }
   Future<void> fetchData() async {
     try {
