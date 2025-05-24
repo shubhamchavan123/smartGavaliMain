@@ -84,10 +84,14 @@ class MembershipDialog extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) =>  AnimalArjaFormScreen()),
-                  );
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (_) => AnimalArjaFormScreen(
+                  //       categoryName: category.category,
+                  //     ),
+                  //   ),
+                  // );
 
                 },
                 child: const Text(

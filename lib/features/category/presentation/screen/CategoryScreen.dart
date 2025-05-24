@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:smart_gawali/features/ApiService/api_service.dart';
+import 'package:smart_gawali/features/category/presentation/screen/ChildSubcategoryList.dart';
 
 import 'package:smart_gawali/features/category/presentation/screen/subcategory_model.dart';
 import 'package:smart_gawali/features/login/presentation/screen/HirvaCharaListingScreen.dart';
@@ -14,6 +15,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:smart_gawali/screens/add_to_cart.dart';
 import '../../../../provider/calcium_mineral_product_provider.dart';
+import '../../../home/presentation/screen/HomeScreen.dart';
 import 'calcium_mineral_mixture_product_list_screen.dart';
 import 'category_model.dart'; // Make sure this file contains your CategoryModel and Detail classes
 
@@ -85,93 +87,98 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: buildAppBar(context),
-      body: FutureBuilder<List<CategoryDetail>>(
-        future: _categoriesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final categories = snapshot.data ?? [];
-
-          // Sort by id (as int)
-          categories.sort((a, b) => int.parse(a.id).compareTo(int.parse(b.id)));
-
-          /// Group categories by their category name (e.g., प्राणी, मशीन)
-          // Then group
-          final Map<String, List<CategoryDetail>> groupedCategories = {};
-          for (var item in categories) {
-            if (!groupedCategories.containsKey(item.category)) {
-              groupedCategories[item.category] = [];
-            }
-            groupedCategories[item.category]!.add(item);
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: groupedCategories.entries.map((entry) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    sectionHeader(entry.key),
-                    const SizedBox(height: 8),
-                    FutureBuilder<List<Details>>(
-                      future: ApiService.fetchSubCategories(
-                          entry.value.first.id),
-                      builder: (context, subSnapshot) {
-                        if (subSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return _buildShimmerGrid(); // Show shimmer for subcategories
-                        } else if (subSnapshot.hasError) {
-                          return Center(
-                              child: Text('Error loading subcategories'));
-                        }
-
-                        final subcategories = subSnapshot.data ?? [];
-
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: subcategories.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 0.9,
-                          ),
-                          itemBuilder: (context, index) {
-                            final subItem = subcategories[index];
-                            return animalCard(
-                              context,
-                              subItem.image ?? 'assets/images/gav.png',
-                              subItem.subcategory, // display subcategory name
-                              subItem
-                                  .id, // use this as subCatId for navigation or logic
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }).toList(),
-            ),
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Refresh both categories and subcategories
+          setState(() {
+            _categoriesFuture = ApiService.fetchCategories();
+          });
+          await _categoriesFuture; // Wait for the future to complete
+          return; // Explicitly return void
         },
+        child: FutureBuilder<List<CategoryDetail>>(
+          future: _categoriesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            final categories = snapshot.data ?? [];
+            categories.sort((a, b) => int.parse(a.id).compareTo(int.parse(b.id)));
+
+            final Map<String, List<CategoryDetail>> groupedCategories = {};
+            for (var item in categories) {
+              if (!groupedCategories.containsKey(item.category)) {
+                groupedCategories[item.category] = [];
+              }
+              groupedCategories[item.category]!.add(item);
+            }
+
+            return SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: groupedCategories.entries.map((entry) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      sectionHeader(entry.key),
+                      const SizedBox(height: 8),
+                      FutureBuilder<List<Details>>(
+                        future: ApiService.fetchSubCategories(
+                            entry.value.first.id),
+                        builder: (context, subSnapshot) {
+                          if (subSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return _buildShimmerGrid();
+                          } else if (subSnapshot.hasError) {
+                            return Center(
+                                child: Text('Error loading subcategories'));
+                          }
+
+                          final subcategories = subSnapshot.data ?? [];
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: subcategories.length,
+                            gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 0.9,
+                            ),
+                            itemBuilder: (context, index) {
+                              final subItem = subcategories[index];
+                              return animalCard(
+                                context,
+                                subItem.image ?? 'assets/images/gav.png',
+                                subItem.subcategory,
+                                subItem.id,
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
-
   AppBar buildAppBar(BuildContext context) {
     return AppBar(
       elevation: 0,
@@ -185,9 +192,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       leading: Container(
         margin: EdgeInsets.all(8),
         child: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            // Navigator.pop(context);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => HomeScreen()),
+                  (route) => false,
+            );
           },
         ),
       ),
@@ -288,7 +299,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  Widget animalCard(
+  /*Widget animalCard(
       BuildContext context, String imagePath, String label, String categoryId) {
     return InkWell(
         onTap: () {
@@ -307,7 +318,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProductListScreen(subCatId: categoryId),
+                builder: (context) => ChildSubcategoryList(subCatId: categoryId,subcategoryName: label),
               ),
             );
           }
@@ -351,6 +362,91 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ),
         ));
+  }
+*/
+
+  Widget animalCard(
+      BuildContext context, String imagePath, String label, String categoryId) {
+    return InkWell(
+      onTap: () async {
+        debugPrint("SubCategory Tapped: ID = $categoryId");
+
+        if (categoryId == "10") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddToCart(subCatId: categoryId),
+            ),
+          );
+        } else {
+          // ✅ Check if child subcategories exist before navigating
+          final subcategories =
+          await ApiService.fetchChildSubcategories(categoryId);
+
+          if (subcategories.isEmpty) {
+            // No child categories — go directly to posts
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChildSubcategoryPosts(
+                  subcategoryId: categoryId,
+                  title: label,
+                ),
+              ),
+            );
+          } else {
+            // Child categories exist — show the list
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChildSubcategoryList(
+                  subCatId: categoryId,
+                  subcategoryName: label,
+                ),
+              ),
+            );
+          }
+        }
+      },
+      child: Card(
+        color: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        'assets/images/placeholder.png',
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
 }

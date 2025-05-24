@@ -1,20 +1,25 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AnimalArjaFormScreen extends StatefulWidget {
-  const AnimalArjaFormScreen({super.key});
+  final String categoryName;
+
+  const AnimalArjaFormScreen({super.key, required this.categoryName});
 
   @override
   State<AnimalArjaFormScreen> createState() => _AnimalArjaFormScreenState();
 }
 
-class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
+class _AnimalArjaFormScreenState   extends State<AnimalArjaFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // TextEditingControllers
+  // Controllers
   final TextEditingController nameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
@@ -26,6 +31,13 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
 
   File? _selectedImage;
   bool _isLoading = false;
+  int userId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDataFromPrefs(); // Load SharedPreferences data
+  }
 
   @override
   void dispose() {
@@ -38,6 +50,28 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
     sourceController.dispose();
     villageTitleController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserDataFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString('userData');
+    final storedUserId = prefs.getString('user_id');
+
+    if (storedUserId != null) {
+      userId = int.tryParse(storedUserId) ?? 0;
+    }
+
+    if (userDataString != null) {
+      final userData = json.decode(userDataString);
+
+      setState(() {
+        nameController.text = userData['name'] ?? '';
+        mobileController.text = userData['mobile'] ?? '';
+        addressController.text = userData['address'] ?? '';
+      });
+    }
+
+    debugPrint("Loaded user_id: $userId");
   }
 
   Future<void> _pickImage() async {
@@ -56,11 +90,9 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
       setState(() => _isLoading = true);
 
       try {
-        final uri = Uri.parse('https://yourapi.com/submit-form'); // TODO: replace with your API
-
+        final uri = Uri.parse('https://yourapi.com/submit-form'); // Replace with your API
         final request = http.MultipartRequest('POST', uri);
 
-        // Add form fields
         request.fields['name'] = nameController.text.trim();
         request.fields['address'] = addressController.text.trim();
         request.fields['mobile'] = mobileController.text.trim();
@@ -69,17 +101,16 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
         request.fields['vet'] = vetController.text.trim();
         request.fields['source'] = sourceController.text.trim();
         request.fields['villageTitle'] = villageTitleController.text.trim();
+        request.fields['user_id'] = userId.toString();
 
-        // Add image file if selected
         if (_selectedImage != null) {
           request.files.add(await http.MultipartFile.fromPath(
-            'photo', // This must match your API field name
+            'photo',
             _selectedImage!.path,
             filename: basename(_selectedImage!.path),
           ));
         }
 
-        // Send request
         final response = await request.send();
 
         setState(() => _isLoading = false);
@@ -151,7 +182,7 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('प्राणी अर्ज'),
+        title: Text(widget.categoryName),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
@@ -163,174 +194,40 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'नाव',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField('', nameController),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'पत्ता',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField('', addressController),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'मोबाईल',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField('', mobileController,
-                      keyboardType: TextInputType.phone),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'अपेक्षा',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField('', conditionController),
+                  _buildSectionTitle('नाव'),
+                  _buildTextFieldNameMobile('नाव', nameController, readOnly: true), // Read-only
+                  _buildSectionTitle('मोबाईल'),
+                  _buildTextFieldNameMobile('मोबाईल', mobileController,
+                      keyboardType: TextInputType.phone, readOnly: true),
+                  _buildSectionTitle('पत्ता'),
+                  _buildTextField('पत्ता', addressController),
+                   // Read-only
+
                   Row(
                     children: [
                       Expanded(
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 10.0),
-                                    child: Text(
-                                      'वय',
-                                      textAlign: TextAlign.start,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing:0,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              _buildTextField('', khareController),
-                            ],
-                          )),
+                        child: Column(
+                          children: [
+                            _buildSectionTitle('वय'),
+                            _buildTextField('वय', khareController),
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 10.0),
-                                child: Text(
-                                  'वेत',
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing:0,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          _buildTextField('', vetController),
-                        ],
-                      )),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'दूध',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _buildSectionTitle('वेत'),
+                            _buildTextField('वेत', vetController),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  _buildTextField('', sourceController),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
-                          'गाभण(असल्यास महिना लिहावा)',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing:0,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField('',
-                      villageTitleController),
+                  _buildSectionTitle('दूध'),
+                  _buildTextField('दूध', sourceController),
+                  _buildSectionTitle('गाभण (असल्यास महिना लिहावा)'),
+                  _buildTextField('गाभण', villageTitleController),
                   const SizedBox(height: 10),
                   _buildUploadBox(),
                   const SizedBox(height: 20),
@@ -346,10 +243,13 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('सबमिट करा',
-                          style:
-                          TextStyle(fontSize: 16, color: Colors.white)),
+                          ? const CircularProgressIndicator(
+                          color: Colors.white)
+                          : const Text(
+                        'सबमिट करा',
+                        style:
+                        TextStyle(fontSize: 16, color: Colors.white),
+                      ),
                     ),
                   )
                 ],
@@ -360,4 +260,53 @@ class _AnimalArjaFormScreenState extends State<AnimalArjaFormScreen> {
       ),
     );
   }
+
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 10.0),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+              height: 1.2,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextFieldNameMobile(
+      String label,
+      TextEditingController controller, {
+        TextInputType keyboardType = TextInputType.text,
+        bool readOnly = false,
+      }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        readOnly: readOnly,
+        validator: (value) {
+          if (!readOnly && (value == null || value.isEmpty)) {
+            return 'कृपया $label भरा';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          hintText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+      ),
+    );
+  }
+
 }

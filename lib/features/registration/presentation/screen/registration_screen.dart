@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:smart_gawali/features/login/presentation/screen/smart_login_screen.dart';
 
+import '../../../ApiService/api_service.dart';
+
+
 class RegistrationScreen extends StatefulWidget {
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -14,10 +17,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
 
   Future<void> registerUser() async {
-    final url = Uri.parse('https://sks.sitsolutions.co.in/do_register');
+    if (!_formKey.currentState!.validate()) return;
+
+    final url = ApiService.doRegisterUrl;
+    // Uri.parse('https://sks.sitsolutions.co.in/do_register');
 
     final response = await http.post(
       url,
@@ -61,17 +68,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 CircleAvatar(
                   backgroundColor: Colors.green,
                   radius: 35,
-                  child: Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 40,
-                  ),
+                  child: Icon(Icons.check, color: Colors.white, size: 40),
                 ),
                 SizedBox(height: 16),
-                Text(
-                  'नोंदणी यशस्वी',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                Text('नोंदणी यशस्वी', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -80,14 +80,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (context) => LoginScreen()),
-                            (Route<dynamic> route) => false, // Remove all previous routes
+                            (route) => false,
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       padding: EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text('पुढे', style: TextStyle(color: Colors.white)),
@@ -100,32 +98,84 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       },
     );
   }
-
   void showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('त्रुटी'),
-        content: Text(message),
-        actions: [
-
-          TextButton(
-            onPressed: () {
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                      (route) => false,
-                );
-
-            },
-            child: Text('ठीक आहे'),
-          )
-
-        ],
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.red,
+                radius: 35,
+                child: Icon(Icons.close, color: Colors.white, size: 40),
+              ),
+              SizedBox(height: 16),
+              Text('त्रुटी',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginScreen()),
+                          (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text('ठीक आहे', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+
+  // void showErrorDialog(BuildContext context, String message) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text('त्रुटी'),
+  //       content: Text(message),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.pushAndRemoveUntil(
+  //               context,
+  //               MaterialPageRoute(builder: (context) => LoginScreen()),
+  //                   (route) => false,
+  //             );
+  //           },
+  //           child: Text('ठीक आहे'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -135,98 +185,124 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('नोंदणी करा',
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87)),
-                SizedBox(height: 5),
-                Text('Welcome back',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                SizedBox(height: 20),
-                Image.asset('assets/images/smart.png', height: 100),
-                Image.asset('assets/images/login_logo.png', height: 140),
-                Image.asset('assets/images/gawali.png', height: 140),
-                SizedBox(height: 20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('नोंदणी करा',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  SizedBox(height: 5),
+                  Text('Welcome back', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                  SizedBox(height: 20),
+                  Image.asset('assets/images/smart.png', height: 100),
+                  Image.asset('assets/images/login_logo.png', height: 140),
+                  Image.asset('assets/images/gawali.png', height: 140),
+                  SizedBox(height: 20),
 
-                /// First Name
-                buildLabel('पहिलं नाव'),
-                buildTextField(
+                  /// First Name
+                  buildLabel('पहिलं नाव'),
+                  buildTextField(
                     controller: firstNameController,
                     hintText: 'पहिलं नाव टाका',
-                    icon: Icons.person),
+                    icon: Icons.person,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'पहिलं नाव आवश्यक आहे';
+                      return null;
+                    },
+                  ),
 
-                /// Last Name
-                buildLabel('आडनाव'),
-                buildTextField(
+                  /// Last Name
+                  buildLabel('आडनाव'),
+                  buildTextField(
                     controller: lastNameController,
                     hintText: 'आडनाव टाका',
-                    icon: Icons.person_outline),
+                    icon: Icons.person_outline,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'आडनाव आवश्यक आहे';
+                      return null;
+                    },
+                  ),
 
-                /// Mobile
-                buildLabel('मोबाईल नंबर'),
-                buildTextField(
+                  /// Mobile Number
+                  buildLabel('मोबाईल नंबर'),
+                  buildTextField(
                     controller: mobileController,
                     hintText: 'मोबाईल नंबर टाका',
                     icon: Icons.phone,
-                    keyboardType: TextInputType.phone),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'मोबाईल नंबर आवश्यक आहे';
+                      if (!RegExp(r'^[0-9]{10}$').hasMatch(value.trim())) return 'वैध मोबाईल नंबर टाका';
+                      return null;
+                    },
+                  ),
 
-                buildLabel('वापरकर्ता नाव'),
-                buildTextField(
+                  /// Username (reusing mobileController here is not ideal – can add separate controller if needed)
+                  buildLabel('वापरकर्ता नाव'),
+                  buildTextField(
                     controller: mobileController,
                     hintText: '',
-                    icon: Icons.phone,
-                    keyboardType: TextInputType.phone),
+                    icon: Icons.person,
+                    keyboardType: TextInputType.text,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'वापरकर्ता नाव आवश्यक आहे';
+                      return null;
+                    },
+                  ),
 
-                /// Password
-                buildLabel('पासवर्ड'),
-                TextField(
-                  controller: passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: 'पासवर्ड टाका',
-                    prefixIcon: Icon(Icons.lock),
-                    contentPadding:
-                    EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
+                  /// Password
+                  buildLabel('पासवर्ड'),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: TextFormField(
+                      controller: passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        hintText: 'पासवर्ड टाका',
+                        prefixIcon: Icon(Icons.lock),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'पासवर्ड आवश्यक आहे';
+                        if (value.length < 6) return 'किमान 6 अक्षरे असावीत';
+                        return null;
                       },
                     ),
                   ),
-                ),
-                SizedBox(height: 30),
+                  SizedBox(height: 30),
 
-                /// Register Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: registerUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  /// Register Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: registerUser,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
+                      child: Text('नोंदणी करा',
+                          style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
-                    child: Text('नोंदणी करा',
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -242,35 +318,31 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           Text(
             label,
             textAlign: TextAlign.start,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0,
-              height: 1.2,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, height: 1.2),
           ),
         ],
       ),
     );
   }
 
-  Widget buildTextField(
-      {required TextEditingController controller,
-        required String hintText,
-        required IconData icon,
-        TextInputType keyboardType = TextInputType.text}) {
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        validator: validator,
         decoration: InputDecoration(
           hintText: hintText,
           prefixIcon: Icon(icon),
           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
           filled: true,
           fillColor: Colors.grey[100],
         ),

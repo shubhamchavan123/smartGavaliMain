@@ -1,9 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:smart_gawali/features/home/presentation/screen/HomeScreen.dart';
+import 'package:smart_gawali/features/login/presentation/screen/MyPurchaseScreen.dart';
 import 'package:smart_gawali/features/login/presentation/screen/ProfileFormScreen.dart';
 import 'package:smart_gawali/features/login/presentation/screen/smart_login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+
+
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  File? _profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage(); // ✅ Load image on screen start
+  }
+
+  Future<void> _loadProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString('userData');
+    if (userDataString != null) {
+      final userData = json.decode(userDataString);
+      final imagePath = userData['imagePath'] ?? '';
+      if (imagePath.toString().isNotEmpty && File(imagePath).existsSync()) {
+        setState(() {
+          _profileImage = File(imagePath);
+        });
+      }
+    }
+  }
+
+  Future<void> _navigateToEditProfile() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) =>  ProfileFormScreen()),
+    );
+    await _loadProfileImage(); // ✅ Reload image after editing
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,33 +55,28 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent, // Important for gradient visibility
-        title: Text(
+        backgroundColor: Colors.transparent,
+        title: const Text(
           'प्रोफाइल',
           style: TextStyle(
-            color: Colors.black, // Title color
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: false,
-        leading: Container(
-          margin: EdgeInsets.all(8),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () {
-
-            },
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>  HomeScreen(),
+              ),
+            );
+          },
         ),
-
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF2E7D32), // Green at top
-                Color(0xFFFFFFFF), // White at bottom
-              ],
+              colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -50,22 +89,18 @@ class ProfileScreen extends StatelessWidget {
           Center(
             child: Stack(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 50,
-                  backgroundImage: AssetImage('assets/images/user.png'), // Replace with actual image
+                  backgroundImage: _profileImage != null
+                      ? FileImage(_profileImage!)
+                      : const AssetImage('assets/icons/dummy_profile_ic.png')
+                  as ImageProvider,
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>  ProfileFormScreen(),
-                        ),
-                      );
-                    },
+                    onTap: _navigateToEditProfile,
                     child: const CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.brown,
@@ -77,19 +112,25 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // Your settings list
-           ProfileMenuItem(title: "सेटिंग"),
-           ProfileMenuItem(title: '" माझी विक्री "'),
-        ProfileMenuItem(
-          title: "लॉग आऊट",
-          onTap: () {
-            showLogoutDialog(context);
-          },
-        ),
+          const ProfileMenuItem(title: "सेटिंग"),
+           ProfileMenuItem(title: "माझी खरेदी",onTap: () {
 
-
-          Spacer(),
-           Text(
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>  MyPurchaseScreen(),
+              ),
+            );
+          },),
+          const ProfileMenuItem(title: "माझी विक्री"),
+          ProfileMenuItem(
+            title: "लॉग आऊट",
+            onTap: () {
+              showLogoutDialog(context);
+            },
+          ),
+          const Spacer(),
+          const Text(
             "खरेदीसाठी टाका",
             style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
           ),
@@ -119,6 +160,7 @@ class ProfileMenuItem extends StatelessWidget {
     );
   }
 }
+
 void showLogoutDialog(BuildContext context) {
   showDialog(
     context: context,
@@ -126,7 +168,7 @@ void showLogoutDialog(BuildContext context) {
     builder: (_) => Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -134,46 +176,50 @@ void showLogoutDialog(BuildContext context) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               backgroundColor: Colors.red,
               radius: 35,
               child: Icon(Icons.logout, color: Colors.white, size: 40),
             ),
-            SizedBox(height: 16),
-            Text('तुम्हाला खात्रीने लॉग आऊट करायचे आहे का?',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            SizedBox(height: 24),
+            const SizedBox(height: 16),
+            const Text(
+              'तुम्हाला खात्रीने लॉग आऊट करायचे आहे का?',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context), // Cancel
+                    onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: Text('रद्द करा', style: TextStyle(color: Colors.white)),
+                    child: const Text('रद्द करा',
+                        style: TextStyle(color: Colors.white)),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      Navigator.pop(context); // Close dialog first
-                      await logout(context);  // Then perform logout
+                      Navigator.pop(context);
+                      await logout(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: Text('हो', style: TextStyle(color: Colors.white)),
+                    child:
+                    const Text('हो', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],
@@ -184,3 +230,5 @@ void showLogoutDialog(BuildContext context) {
     ),
   );
 }
+
+

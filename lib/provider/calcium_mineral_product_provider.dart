@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../features/ApiService/api_service.dart';
 import '../features/category/presentation/screen/calcium_mineral_mixture_product_list_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -27,7 +28,8 @@ class CalciumMineralProductProvider with ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('https://sks.sitsolutions.co.in/product_list'),
+          ApiService.productListUrl,
+        // Uri.parse('https://sks.sitsolutions.co.in/product_list'),
       );
 
       if (response.statusCode == 200) {
