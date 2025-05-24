@@ -515,12 +515,12 @@ class _MyPostScreenState extends State<MyPostScreen> {
   Widget _buildPostFooter(PostDetail post) {
     return Row(
       children: [
-        const Icon(Icons.calendar_today, size: 16),
-        const SizedBox(width: 4),
-        Text(post.createdAt.split(' ').first.replaceAll('-', '/')),
-        const Spacer(),
+        // const Icon(Icons.calendar_today, size: 16),
+        // const SizedBox(width: 4),
+        // Text(post.createdAt.split(' ').first.replaceAll('-', '/')),
+        // const Spacer(),
         Text('Views:'),
-        const Icon(Icons.remove_red_eye, size: 16, color: Colors.grey),
+        const Icon(Icons.remove_red_eye, size: 20, color: Colors.grey),
         const SizedBox(width: 4),
 
         Text(
@@ -613,46 +613,49 @@ class _MyPostScreenState extends State<MyPostScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
-                          PopupMenuButton<PostMenuAction>(
-                            icon: const Icon(Icons.more_vert),
-                            onSelected: (action) async {
-                              if (action == PostMenuAction.edit) {
-                                debugPrint('✏️ Editing post ${post.id}');
-                                final updatedPost = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => EditPostScreen(post: post),
-                                  ),
-                                );
-
-                                if (updatedPost != null && updatedPost is PostDetail) {
-                                  debugPrint('🔄 Received updated post:');
-                                  debugPrint('   ID: ${updatedPost.id}');
-                                  debugPrint('   Name: ${updatedPost.name}');
-                                  debugPrint('   Price: ${updatedPost.price}');
-
-                                  setState(() {
-                                    posts[index] = updatedPost;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Post updated successfully')),
-                                  );
-                                }
-                              } else if (action == PostMenuAction.delete) {
-                                _confirmDelete(post.id);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem<PostMenuAction>(
-                                value: PostMenuAction.edit,
-                                child: Text('Edit Post'),
-                              ),
-                              const PopupMenuItem<PostMenuAction>(
-                                value: PostMenuAction.delete,
-                                child: Text('Delete Post', style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                          )
+                          const Icon(Icons.calendar_today, size: 16),
+                          const SizedBox(width: 4),
+                          Text(post.createdAt.split(' ').first.replaceAll('-', '/')),
+                          // PopupMenuButton<PostMenuAction>(
+                          //   icon: const Icon(Icons.more_vert),
+                          //   onSelected: (action) async {
+                          //     if (action == PostMenuAction.edit) {
+                          //       debugPrint('✏️ Editing post ${post.id}');
+                          //       final updatedPost = await Navigator.push(
+                          //         context,
+                          //         MaterialPageRoute(
+                          //           builder: (_) => EditPostScreen(post: post),
+                          //         ),
+                          //       );
+                          //
+                          //       if (updatedPost != null && updatedPost is PostDetail) {
+                          //         debugPrint('🔄 Received updated post:');
+                          //         debugPrint('   ID: ${updatedPost.id}');
+                          //         debugPrint('   Name: ${updatedPost.name}');
+                          //         debugPrint('   Price: ${updatedPost.price}');
+                          //
+                          //         setState(() {
+                          //           posts[index] = updatedPost;
+                          //         });
+                          //         ScaffoldMessenger.of(context).showSnackBar(
+                          //           const SnackBar(content: Text('Post updated successfully')),
+                          //         );
+                          //       }
+                          //     } else if (action == PostMenuAction.delete) {
+                          //       _confirmDelete(post.id);
+                          //     }
+                          //   },
+                          //   itemBuilder: (context) => [
+                          //     const PopupMenuItem<PostMenuAction>(
+                          //       value: PostMenuAction.edit,
+                          //       child: Text('Edit Post'),
+                          //     ),
+                          //     const PopupMenuItem<PostMenuAction>(
+                          //       value: PostMenuAction.delete,
+                          //       child: Text('Delete Post', style: TextStyle(color: Colors.red)),
+                          //     ),
+                          //   ],
+                          // )
                         ],
                       ),
                       const SizedBox(height: 8),

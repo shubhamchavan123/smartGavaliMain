@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "29102015061",
+    "project_id": "smartgavali",
+    "storage_bucket": "smartgavali.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:29102015061:android:3260142c2834e5cd518adc",
+        "android_client_info": {
+          "package_name": "com.smartgawali.smart_gawali"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUJRspLNs633rEHCWNgyjpeFr0yIWy0S0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

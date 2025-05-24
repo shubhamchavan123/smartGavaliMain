@@ -33,11 +33,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _bottomNavIndex = 0;
 
-  final iconList = <IconData>[
-    Icons.home,
-    Icons.shopping_cart,
-    Icons.qr_code,
-    Icons.person,
+  // final iconList = <IconData>[
+  //   Icons.home,
+  //   Icons.category_outlined,
+  //   Icons.post_add,
+  //   Icons.person,
+  // ];
+  final navItems = <Map<String, dynamic>>[
+    {'icon': Icons.home, 'label': 'Home'},
+    {'icon': Icons.category_outlined, 'label': 'Category'},
+    {'icon': Icons.post_add, 'label': 'Post'},
+    {'icon': Icons.person, 'label': 'Profile'},
   ];
 
   final List<Widget> _screens = [
@@ -503,11 +509,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // bottomNavigationBar: AnimatedBottomNavigationBar.builder(
+      //   itemCount: iconList.length,
+      //   tabBuilder: (int index, bool isActive) {
+      //     final color = isActive ? Colors.green : Colors.grey;
+      //     return Icon(iconList[index], color: color, size: 28);
+      //   },
+      //   activeIndex: _bottomNavIndex,
+      //   gapLocation: GapLocation.center,
+      //   notchSmoothness: NotchSmoothness.verySmoothEdge,
+      //   leftCornerRadius: 32,
+      //   rightCornerRadius: 32,
+      //   onTap: (index) => setState(() => _bottomNavIndex = index),
+      //   backgroundColor: Colors.white,
+      //   borderColor: Colors.green,
+      // ),
       bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-        itemCount: iconList.length,
+        itemCount: navItems.length,
         tabBuilder: (int index, bool isActive) {
           final color = isActive ? Colors.green : Colors.grey;
-          return Icon(iconList[index], color: color, size: 28);
+          return Container(
+            height: 60,
+            // padding: EdgeInsets.only(top: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(navItems[index]['icon'], color: color, size: 28),
+                const SizedBox(height: 2),
+                Text(
+                  navItems[index]['label'],
+                  style: TextStyle(color: color, fontSize: 12),
+                ),
+              ],
+            ),
+          );
         },
         activeIndex: _bottomNavIndex,
         gapLocation: GapLocation.center,
@@ -518,6 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         borderColor: Colors.green,
       ),
+
     );
   }
 }

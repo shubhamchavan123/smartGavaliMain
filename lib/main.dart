@@ -119,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 2), () async {
+    Timer(Duration(seconds: 3), () async {
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
@@ -145,11 +145,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/login_logo.png', height: 120), // Make sure the asset exists
-            const SizedBox(height: 24),
-            // const CircularProgressIndicator(
-            //   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            // ),
+            Center(child: Padding(
+              padding: const EdgeInsets.only(right: 22.0),
+              child: Image.asset('assets/images/splash_screen.png', height: 520),
+            )), // Make sure the asset exists
+
           ],
         ),
       ),

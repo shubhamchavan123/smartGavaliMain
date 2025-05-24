@@ -130,10 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           const Spacer(),
-          const Text(
-            "खरेदीसाठी टाका",
-            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-          ),
+          // const Text(
+          //   "खरेदीसाठी टाका",
+          //   style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+          // ),
           const SizedBox(height: 16),
         ],
       ),
