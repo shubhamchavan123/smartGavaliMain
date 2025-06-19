@@ -1,116 +1,632 @@
-// ignore: depend_on_referenced_packages
-// ignore_for_file: await_only_futures, avoid_single_cascade_in_expression_statements, avoid_print
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-// class NotificationScreen extends StatelessWidget {
-//   // If you sometimes still want to show details of a specific RemoteMessage,
-//   // you can accept it as an *optional* parameter:
-//   final RemoteMessage? message;
-//
-//   const NotificationScreen({ Key? key, this.message }) : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final title = message?.notification?.title ?? 'Your Notifications';
-//     final body  = message?.notification?.body  ?? 'Tap on any notification below.';
-//     // You might instead load a list of past notifications from your app's storage.
-//
-//     return Scaffold(
-//       appBar: AppBar(title: Text('Notifications')),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // Optional header for the one tapped notification
-//             Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//             if (message != null) SizedBox(height: 8),
-//             if (message != null) Text(body),
-//
-//             Divider(height: 32),
-//
-//             // TODO: replace with your real list of notifications
-//             Expanded(
-//               child: Center(child: Text('No other notifications yet.')),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-class AppNotification {
-  final String? title;
-  final String? body;
-  final DateTime receivedTime;
+import '../services/notification_service.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-  AppNotification({
-    this.title,
-    this.body,
-    DateTime? receivedTime,
-  }) : receivedTime = receivedTime ?? DateTime.now();
-}
-
-
-class NotificationScreen extends StatelessWidget {
-  final RemoteMessage? message;
+class NotificationScreen extends StatefulWidget {
   final List<AppNotification> notifications;
 
-  const NotificationScreen({
-    Key? key,
-    this.message,
-    required this.notifications,
-  }) : super(key: key);
+  const NotificationScreen({super.key, required this.notifications});
+
+  @override
+  _NotificationScreenState createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  late List<AppNotification> _allNotifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _allNotifications = [...widget.notifications];
+    _allNotifications.sort((a, b) => b.receivedTime.compareTo(a.receivedTime));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Notifications'),
-        actions: [
-          if (notifications.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                // Optionally clear notifications
-              },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 12.0;
+
+        return WillPopScope(
+          onWillPop: () async {
+            Navigator.popUntil(context, (route) => route.isFirst);
+            return false;
+          },
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: const Text(
+                'नोटिफिकेशन्स',
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: const BackButton(color: Colors.black),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
             ),
-        ],
-      ),
-      body: notifications.isEmpty
-          ? Center(
-        child: Text(
-          'No notifications yet',
-          style: TextStyle(fontSize: 16),
+            body: _allNotifications.isEmpty
+                ? const Center(child: Text('No notifications yet'))
+                : Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: ListView.builder(
+                itemCount: _allNotifications.length,
+                itemBuilder: (context, index) {
+                  final notification = _allNotifications[index];
+                  return _buildNotificationTile(
+                    notification,
+                    isViewed: notification.viewed,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationTile(AppNotification notification, {required bool isViewed}) {
+    return GestureDetector(
+      onTap: () {
+        if (!isViewed) {
+          setState(() {
+            notification.viewed = true;
+          });
+        }
+
+        if (notification.url != null && notification.url!.isNotEmpty) {
+          _launchUrl(notification.url!);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(
+              color: isViewed ? Colors.brown : Color(0xFF6C311E),
+              width: 6,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 9,
+              offset: Offset(0, 8),
+            ),
+          ],
         ),
-      )
-          : ListView.builder(
-        itemCount: notifications.length,
-        itemBuilder: (context, index) {
-          final notification = notifications[index];
-          return Card(
-            margin: EdgeInsets.all(8),
-            child: ListTile(
-              title: Text(
-                notification.title ?? 'No title',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(notification.body ?? 'No content'),
-              trailing: Text(
-                _formatTime(notification.receivedTime),
-                style: TextStyle(color: Colors.grey),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              notification.title ?? 'No title',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
-          );
-        },
+            const SizedBox(height: 4),
+            if (notification.cleanBody != null)
+              ..._buildTextWithLinks(notification.cleanBody!,
+                  excludeUrl: notification.url),
+            if (notification.url != null && notification.url!.isNotEmpty)
+              _buildUrlWidget(notification.url!),
+          ],
+        ),
       ),
     );
+  }
+
+  List<Widget> _buildTextWithLinks(String text, {String? excludeUrl}) {
+    final widgets = <Widget>[];
+    final urlRegExp = RegExp(r'(https?:\/\/[^\s]+)');
+    final matches = urlRegExp.allMatches(text);
+    int lastMatchEnd = 0;
+
+    for (final match in matches) {
+      if (match.start > lastMatchEnd) {
+        widgets.add(Text(text.substring(lastMatchEnd, match.start)));
+      }
+
+      final url = match.group(0)!;
+
+      if (url != excludeUrl) {
+        widgets.add(
+          InkWell(
+            onTap: () => _launchUrl(url),
+            child: Text(
+              url,
+              style: const TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        );
+      }
+
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      widgets.add(Text(text.substring(lastMatchEnd)));
+    }
+
+    return widgets;
+  }
+
+  Widget _buildUrlWidget(String url) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: InkWell(
+        onTap: () => _launchUrl(url),
+        child: Text(
+          url,
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+}
+
+/*
+class NotificationScreen extends StatefulWidget {
+  final List<AppNotification> notifications;
+
+  const NotificationScreen({super.key, required this.notifications});
+
+  @override
+  _NotificationScreenState createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  late List<AppNotification> _unviewedList;
+  late List<AppNotification> _viewedList;
+
+  @override
+  void initState() {
+    super.initState();
+    _unviewedList =
+        widget.notifications.where((n) => !n.viewed).toList(growable: true);
+    _viewedList =
+        widget.notifications.where((n) => n.viewed).toList(growable: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 12.0;
+
+        return WillPopScope(
+          onWillPop: () async {
+            Navigator.popUntil(context, (route) => route.isFirst);
+            return false;
+          },
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: const Text(
+                'नोटिफिकेशन्स',
+                style:
+                TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: const BackButton(color: Colors.black),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            body: _unviewedList.isEmpty && _viewedList.isEmpty
+                ? const Center(child: Text('No notifications yet'))
+                : Padding(
+              padding:
+              EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: ListView(
+                children: [
+                  if (_unviewedList.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16.0, bottom: 8),
+                      child: Text('Unviewed',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    ..._unviewedList.map(
+                            (n) => _buildNotificationTile(n, isViewed: false))
+                  ],
+                  if (_viewedList.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(top: 24.0, bottom: 8),
+                      child: Text('Viewed',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    ..._viewedList.map(
+                            (n) => _buildNotificationTile(n, isViewed: true))
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationTile(AppNotification notification,
+      {required bool isViewed}) {
+    return GestureDetector(
+      onTap: () {
+        if (!isViewed) {
+          setState(() {
+            _unviewedList.remove(notification);
+            notification.viewed = true;
+            _viewedList.insert(0, notification); // optional: latest at top
+          });
+        }
+
+        if (notification.url != null && notification.url!.isNotEmpty) {
+          _launchUrl(notification.url!);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+              left: BorderSide(
+                  color: isViewed ? Colors.grey : Color(0xFF6C311E),
+                  width: 6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 9,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              notification.title ?? 'No title',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (notification.cleanBody != null)
+              ..._buildTextWithLinks(notification.cleanBody!,
+                  excludeUrl: notification.url),
+            if (notification.url != null && notification.url!.isNotEmpty)
+              _buildUrlWidget(notification.url!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTextWithLinks(String text, {String? excludeUrl}) {
+    final widgets = <Widget>[];
+    final urlRegExp = RegExp(r'(https?:\/\/[^\s]+)');
+    final matches = urlRegExp.allMatches(text);
+    int lastMatchEnd = 0;
+
+    for (final match in matches) {
+      if (match.start > lastMatchEnd) {
+        widgets.add(Text(text.substring(lastMatchEnd, match.start)));
+      }
+
+      final url = match.group(0)!;
+
+      if (url != excludeUrl) {
+        widgets.add(
+          InkWell(
+            onTap: () => _launchUrl(url),
+            child: Text(
+              url,
+              style: const TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        );
+      }
+
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      widgets.add(Text(text.substring(lastMatchEnd)));
+    }
+
+    return widgets;
+  }
+
+  Widget _buildUrlWidget(String url) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: InkWell(
+        onTap: () => _launchUrl(url),
+        child: Text(
+          url,
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+  }
+}
+*/
+
+
+
+/*----------------------------------------------------------------------------------------------------*/
+
+/*
+class NotificationScreen extends StatefulWidget {
+  final List<AppNotification> notifications;
+
+  const NotificationScreen({super.key, required this.notifications});
+
+  @override
+  _NotificationScreenState createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> with SingleTickerProviderStateMixin {
+  late List<AppNotification> _unviewedList;
+  late List<AppNotification> _viewedList;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _unviewedList = widget.notifications.where((n) => !n.viewed).toList(growable: true);
+    _viewedList = widget.notifications.where((n) => n.viewed).toList(growable: true);
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 12.0;
+
+        return WillPopScope(
+          onWillPop: () async {
+            Navigator.popUntil(context, (route) => route.isFirst);
+            return false;
+          },
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: const Text(
+                'Notifications',
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: const BackButton(color: Colors.black),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Unviewed'),
+                  Tab(text: 'Viewed'),
+                ],
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+              ),
+            ),
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                // Unviewed Tab
+                _buildNotificationList(_unviewedList, isViewed: false, horizontalPadding: horizontalPadding),
+                // Viewed Tab
+                _buildNotificationList(_viewedList, isViewed: true, horizontalPadding: horizontalPadding),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationList(List<AppNotification> notifications, {required bool isViewed, required double horizontalPadding}) {
+    return notifications.isEmpty
+        ? const Center(child: Text('No notifications yet'))
+        : Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: ListView(
+        children: notifications
+            .map((n) => _buildNotificationTile(n, isViewed: isViewed))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildNotificationTile(AppNotification notification, {required bool isViewed}) {
+    return GestureDetector(
+      onTap: () {
+        if (!isViewed) {
+          setState(() {
+            _unviewedList.remove(notification);
+            notification.viewed = true;
+            _viewedList.insert(0, notification);
+            // Switch to Viewed tab after marking as viewed
+            _tabController.animateTo(1);
+          });
+        }
+
+        if (notification.url != null && notification.url!.isNotEmpty) {
+          _launchUrl(notification.url!);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+              left: BorderSide(
+                  color: isViewed ? Colors.grey : Color(0xFF6C311E),
+                  width: 6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 9,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              notification.title ?? 'No title',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (notification.cleanBody != null)
+              ..._buildTextWithLinks(notification.cleanBody!,
+                  excludeUrl: notification.url),
+            if (notification.url != null && notification.url!.isNotEmpty)
+              _buildUrlWidget(notification.url!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTextWithLinks(String text, {String? excludeUrl}) {
+    final widgets = <Widget>[];
+    final urlRegExp = RegExp(r'(https?:\/\/[^\s]+)');
+    final matches = urlRegExp.allMatches(text);
+    int lastMatchEnd = 0;
+
+    for (final match in matches) {
+      if (match.start > lastMatchEnd) {
+        widgets.add(Text(text.substring(lastMatchEnd, match.start)));
+      }
+
+      final url = match.group(0)!;
+
+      if (url != excludeUrl) {
+        widgets.add(
+          InkWell(
+            onTap: () => _launchUrl(url),
+            child: Text(
+              url,
+              style: const TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        );
+      }
+
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      widgets.add(Text(text.substring(lastMatchEnd)));
+    }
+
+    return widgets;
+  }
+
+  Widget _buildUrlWidget(String url) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: InkWell(
+        onTap: () => _launchUrl(url),
+        child: Text(
+          url,
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   String _formatTime(DateTime time) {
@@ -118,67 +634,122 @@ class NotificationScreen extends StatelessWidget {
   }
 }
 
-// class NotificationScreen extends StatelessWidget {
-//   final RemoteMessage? message;
-//   final List<AppNotification> notifications;
+*/
+
+// class _NotificationScreenState extends State<NotificationScreen> {
+//   late List<AppNotification> _notificationList;
 //
-//   const NotificationScreen({
-//     Key? key,
-//     this.message,
-//     required this.notifications,
-//   }) : super(key: key);
+//   @override
+//   void initState() {
+//     super.initState();
+//     _notificationList = List.from(widget.notifications);
+//   }
 //
 //   @override
 //   Widget build(BuildContext context) {
-//     final title = message?.notification?.title ?? 'Your Notifications';
-//     final body = message?.notification?.body ?? 'Tap on any notification below.';
+//     return LayoutBuilder(
+//       builder: (context, constraints) {
+//         double horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 12.0;
 //
-//     return Scaffold(
-//       appBar: AppBar(title: Text('Notifications')),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // Optional header for the one tapped notification
-//             Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//             if (message != null) SizedBox(height: 8),
-//             if (message != null) Text(body),
+//         return WillPopScope(
+//           onWillPop: () async {
+//             Navigator.popUntil(context, (route) => route.isFirst);
+//             return false;
+//           },
+//           child: Scaffold(
+//             backgroundColor: Colors.white,
+//             appBar: AppBar(
+//               title: const Text(
+//                 'Notifications',
+//                 style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+//               ),
+//               backgroundColor: Colors.transparent,
+//               elevation: 0,
+//               leading: const BackButton(color: Colors.black),
+//               flexibleSpace: Container(
+//                 decoration: const BoxDecoration(
+//                   gradient: LinearGradient(
+//                     colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
+//                     begin: Alignment.topCenter,
+//                     end: Alignment.bottomCenter,
+//                   ),
+//                 ),
+//               ),
+//             ),
+//             body: _notificationList.isEmpty
+//                 ? const Center(child: Text('No notifications yet'))
+//                 : Padding(
 //
-//             Divider(height: 32),
-//
-//             // List of all notifications
-//             Expanded(
-//               child: notifications.isEmpty
-//                   ? Center(child: Text('No notifications yet.'))
-//                   : ListView.builder(
-//                 itemCount: notifications.length,
+//               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+//               child: ListView.builder(
+//                 itemCount: _notificationList.length,
 //                 itemBuilder: (context, index) {
-//                   final notification = notifications[index];
-//                   return Card(
-//                     margin: EdgeInsets.only(bottom: 8),
+//                   final notification = _notificationList[index];
+//                   return Container(
+//
+//                     decoration: BoxDecoration(
+//
+//                       color: Colors.white,
+//                       borderRadius: BorderRadius.circular(8),
+//                       border: Border(left: BorderSide(color: Color(0xFF6C311E), width: 6)),
+//                       boxShadow: [
+//                         BoxShadow(
+//                           color: Colors.grey.shade300,
+//                           blurRadius: 9,
+//                           offset: Offset(0, 8),
+//                         ),
+//                       ],
+//                     ),
+//                     margin: const EdgeInsets.symmetric(vertical: 8),
 //                     child: Padding(
-//                       padding: const EdgeInsets.all(12),
+//                       padding: const EdgeInsets.all(12.0),
 //                       child: Column(
 //                         crossAxisAlignment: CrossAxisAlignment.start,
 //                         children: [
-//                           if (notification.title != null)
-//                             Text(
-//                               notification.title!,
-//                               style: TextStyle(
-//                                 fontWeight: FontWeight.bold,
-//                                 fontSize: 16,
+//                           Row(
+//                             crossAxisAlignment: CrossAxisAlignment.start,
+//                             children: [
+//                               Expanded(
+//                                 child: Column(
+//                                   crossAxisAlignment: CrossAxisAlignment.start,
+//                                   children: [
+//                                     Text(
+//                                       notification.title ?? 'No title',
+//                                       style: const TextStyle(
+//                                         fontWeight: FontWeight.bold,
+//                                         fontSize: 16,
+//                                       ),
+//                                     ),
+//                                     const SizedBox(height: 4),
+//                                     if (notification.cleanBody != null)
+//                                       ..._buildTextWithLinks(
+//                                         notification.cleanBody!,
+//                                         excludeUrl: notification.url,
+//                                       ),
+//                                     if (notification.url != null && notification.url!.isNotEmpty)
+//                                       _buildUrlWidget(notification.url!),
+//                                   ],
+//                                 ),
 //                               ),
-//                             ),
-//                           if (notification.title != null) SizedBox(height: 4),
-//                           if (notification.body != null) Text(notification.body!),
-//                           SizedBox(height: 8),
-//                           Text(
-//                             _formatTime(notification.receivedTime),
-//                             style: TextStyle(
-//                               color: Colors.grey,
-//                               fontSize: 12,
-//                             ),
+//                               const SizedBox(width: 8),
+//                               /*    Column(
+//                                 crossAxisAlignment: CrossAxisAlignment.end,
+//                                 children: [
+//                                   Text(
+//                                     _formatTime(notification.receivedTime),
+//                                     style: const TextStyle(color: Colors.grey, fontSize: 12),
+//                                   ),
+//                                   IconButton(
+//                                     icon: const Icon(Icons.delete, color: Colors.red),
+//                                     onPressed: () {
+//                                       setState(() {
+//                                         _notificationList.removeAt(index);
+//                                       });
+//                                     },
+//                                   ),
+//                                 ],
+//                               ),*/
+//                             ],
 //                           ),
 //                         ],
 //                       ),
@@ -187,119 +758,75 @@ class NotificationScreen extends StatelessWidget {
 //                 },
 //               ),
 //             ),
-//           ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   List<Widget> _buildTextWithLinks(String text, {String? excludeUrl}) {
+//     final widgets = <Widget>[];
+//     final urlRegExp = RegExp(r'(https?:\/\/[^\s]+)');
+//     final matches = urlRegExp.allMatches(text);
+//     int lastMatchEnd = 0;
+//
+//     for (final match in matches) {
+//       if (match.start > lastMatchEnd) {
+//         widgets.add(Text(text.substring(lastMatchEnd, match.start)));
+//       }
+//
+//       final url = match.group(0)!;
+//
+//       if (url != excludeUrl) {
+//         widgets.add(
+//           InkWell(
+//             onTap: () => _launchUrl(url),
+//             child: Text(
+//               url,
+//               style: const TextStyle(
+//                 color: Colors.blue,
+//                 decoration: TextDecoration.underline,
+//               ),
+//             ),
+//           ),
+//         );
+//       }
+//
+//       lastMatchEnd = match.end;
+//     }
+//
+//     if (lastMatchEnd < text.length) {
+//       widgets.add(Text(text.substring(lastMatchEnd)));
+//     }
+//
+//     return widgets;
+//   }
+//
+//   Widget _buildUrlWidget(String url) {
+//     return Padding(
+//       padding: const EdgeInsets.only(top: 4.0),
+//       child: InkWell(
+//         onTap: () => _launchUrl(url),
+//         child: Text(
+//           url,
+//           style: const TextStyle(
+//             color: Colors.blue,
+//             decoration: TextDecoration.underline,
+//           ),
 //         ),
 //       ),
 //     );
 //   }
 //
+//   Future<void> _launchUrl(String url) async {
+//     final uri = Uri.tryParse(url);
+//     if (uri != null && await canLaunchUrl(uri)) {
+//       await launchUrl(uri, mode: LaunchMode.externalApplication);
+//     }
+//   }
+//
 //   String _formatTime(DateTime time) {
-//     return '${time.hour}:${time.minute.toString().padLeft(2, '0')} · ${time.day}/${time.month}/${time.year}';
+//     return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
 //   }
 // }
-/*
 
-class NotificationScreen extends StatefulWidget {
-  final RemoteMessage? message;
-  const NotificationScreen({super.key, this.message});
-
-  @override
-  State<NotificationScreen> createState() => _NotificationScreenState();
-}
-
-class _NotificationScreenState extends State<NotificationScreen> {
-  User? user = FirebaseAuth.instance.currentUser;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Notifications"),
-      ),
-      // body: widget.message != null
-      //     ? Card(
-      //         elevation: 5,
-      //         child: ListTile(
-      //           leading: const Icon(Icons.notifications_active),
-      //           title:
-      //               Text(widget.message!.notification!.title.toString() ?? ''),
-      //           subtitle: Text(widget.message!.notification!.body.toString()),
-      //           trailing: Text(widget.message!.data['screen'].toString()),
-      //         ),
-      //       )
-      //     : const Center(
-      //         child: Text("no Notifications"),
-      //       ),
-
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection('notifications')
-            .doc(user!.uid)
-            .collection('notifications')
-            // .where('isSale', isEqualTo: true)
-            .snapshots(),
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.hasError) {
-            return const Center(
-              child: Text("Error"),
-            );
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CupertinoActivityIndicator(),
-            );
-          }
-
-          if (snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text("No notifications found!"),
-            );
-          }
-
-          if (snapshot.data != null) {
-            return ListView.builder(
-              itemCount: snapshot.data!.docs.length,
-              shrinkWrap: true,
-              itemBuilder: (context, index) {
-                String docId = snapshot.data!.docs[index].id;
-                return GestureDetector(
-                  onTap: () async {
-                    print("Docid => $docId");
-                    await FirebaseFirestore.instance
-                        .collection('notifications')
-                        .doc(user!.uid)
-                        .collection('notifications')
-                        .doc(docId)
-                        .update(
-                      {
-                        "isSeen": true,
-                      },
-                    );
-                  },
-                  child: Card(
-                    color: snapshot.data!.docs[index]['isSeen']
-                        ? Colors.green.withOpacity(0.3)
-                        : Colors.blue.withOpacity(0.3),
-                    elevation: snapshot.data!.docs[index]['isSeen'] ? 0 : 5,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Icon(snapshot.data!.docs[index]['isSeen']
-                            ? Icons.done
-                            : Icons.notification_add),
-                      ),
-                      title: Text(snapshot.data!.docs[index]['title']),
-                      subtitle: Text(snapshot.data!.docs[index]['body']),
-                    ),
-                  ),
-                );
-              },
-            );
-          }
-
-          return Container();
-        },
-      ),
-    );
-  }
-}
-*/

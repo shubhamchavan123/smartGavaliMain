@@ -17,17 +17,17 @@ class CategoryModel {
   String status;
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) => CategoryModel(
-        details: List<CategoryDetail>.from(
-            json["details"].map((x) => CategoryDetail.fromJson(x))),
-        message: json["message"],
-        status: json["status"],
-      );
+    details: List<CategoryDetail>.from(
+        json["details"].map((x) => CategoryDetail.fromJson(x))),
+    message: json["message"],
+    status: json["status"],
+  );
 
   Map<String, dynamic> toJson() => {
-        "details": List<dynamic>.from(details.map((x) => x.toJson())),
-        "message": message,
-        "status": status,
-      };
+    "details": List<dynamic>.from(details.map((x) => x.toJson())),
+    "message": message,
+    "status": status,
+  };
 }
 
 class CategoryDetail {
@@ -37,6 +37,7 @@ class CategoryDetail {
     required this.id,
     required this.category,
     required this.isDeleted,
+    required this.isAdminProduct,
   });
 
   DateTime createdAt;
@@ -44,20 +45,23 @@ class CategoryDetail {
   String id;
   String category;
   String isDeleted;
+  String isAdminProduct;
 
   factory CategoryDetail.fromJson(Map<String, dynamic> json) => CategoryDetail(
-        createdAt: DateTime.parse(json["created_at"]),
-        id: json["id"],
-        image: json["image"],
-        category: json["category"],
-        isDeleted: json["isdeleted"],
-      );
+    createdAt: DateTime.parse(json["created_at"]),
+    id: json["id"],
+    image: json["image"],
+    category: json["category"],
+    isDeleted: json["isdeleted"],
+    isAdminProduct: json["is_admin_product"],
+  );
 
   Map<String, dynamic> toJson() => {
-        "created_at": createdAt.toIso8601String(),
-        "id": id,
-        "image": image,
-        "category": category,
-        "isdeleted": isDeleted,
-      };
+    "created_at": createdAt.toIso8601String(),
+    "id": id,
+    "image": image,
+    "category": category,
+    "isdeleted": isDeleted,
+    "is_admin_product": isAdminProduct,
+  };
 }

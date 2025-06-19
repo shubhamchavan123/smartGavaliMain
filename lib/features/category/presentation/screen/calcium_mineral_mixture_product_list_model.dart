@@ -29,7 +29,8 @@ class CalciumMineralMixtureProductListModel {
     required this.createdAt,
   });
 
-  factory CalciumMineralMixtureProductListModel.fromJson(Map<String, dynamic> json) {
+  factory CalciumMineralMixtureProductListModel.fromJson(
+      Map<String, dynamic> json) {
     return CalciumMineralMixtureProductListModel(
       id: json['id'],
       catId: json['cat_id'],
@@ -45,5 +46,22 @@ class CalciumMineralMixtureProductListModel {
       isdeleted: json['isdeleted'],
       createdAt: json['created_at'],
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'cat_id': catId,
+      'subcat_id': subcatId,
+      'name': name,
+      'image': image,
+      'description': description,
+      'price': price,
+      'quantity': quantity,
+      'expiry_date': expiryDate,
+      'weight': weight,
+      'unit': unit,
+      'isdeleted': isdeleted,
+      'created_at': createdAt,
+    };
   }
 }

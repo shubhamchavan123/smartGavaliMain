@@ -11,10 +11,9 @@ import 'package:smart_gawali/features/category/presentation/screen/calcium_miner
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:smart_gawali/features/login/presentation/screen/PostDetailsScreen.dart';
+import 'package:smart_gawali/features/AllScreens/presentation/screen/PostDetailsScreen.dart';
 
 import '../../../../provider/calcium_mineral_product_provider.dart';
-import '../../../login/presentation/screen/MyCartScreen.dart';
 
 // class ChildSubcategoryList extends StatelessWidget {
 //   final String subCatId;
@@ -411,8 +410,8 @@ class _ChildSubcategoryListState extends State<ChildSubcategoryList> {
 }
 
 class ChildSubcategoryPosts extends StatefulWidget {
-  final String? childSubcategoryId; // Make optional
-  final String subcategoryId; // Keep required
+  final String? childSubcategoryId;
+  final String subcategoryId;
   final String title;
 
   const ChildSubcategoryPosts({
@@ -428,56 +427,61 @@ class ChildSubcategoryPosts extends StatefulWidget {
 
 class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
   late Future<ViewCategoryPostModel> _postsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadPosts();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase().trim();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPosts() async {
     try {
       if (widget.childSubcategoryId != null) {
-        // Fetch posts with both subcategory and child subcategory
         _postsFuture = ApiService.fetchCategoryPosts(
           widget.subcategoryId,
           widget.childSubcategoryId!,
         );
       } else {
-        // Create a modified version of fetchCategoryPosts that only needs subcategoryId
-        _postsFuture = ApiService.fetchCategoryPostsBySubcategoryOnly(widget.subcategoryId);
+        _postsFuture =
+            ApiService.fetchCategoryPostsBySubcategoryOnly(widget.subcategoryId);
       }
     } catch (e) {
-      // Handle error
       _postsFuture = Future.error(e);
       _showToast('Failed to load posts: $e');
-      debugPrint('Error loading posts: $e');
     }
   }
 
   Future<void> _addViewToPost(String postId) async {
     try {
-      debugPrint('Attempting to add view for post: $postId');
-// Get SharedPreferences instance
       final prefs = await SharedPreferences.getInstance();
-
-      // Retrieve saved user_id
-      // final userId = prefs.getString('user_id') ?? '0';
       final userId = int.parse(prefs.getString('user_id') ?? '0');
-      final response = await ApiService.addView(userId: userId, postId: postId);
+      final response =
+      await ApiService.addView(userId: userId, postId: postId);
 
       if (response['status'] == 'success') {
-        _showToast('View added successfully');
         debugPrint('View added successfully for post: $postId');
       } else {
         _showToast(response['message'] ?? 'View not added');
-        debugPrint('View tracking message: ${response['message']}');
       }
     } catch (e) {
       _showToast('Failed to track view');
-      debugPrint('Error adding view: $e');
     }
   }
+
   void _showToast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -487,56 +491,20 @@ class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
     );
   }
 
-  // Future<ViewCategoryPostModel> _fetchPostsForSubcategoryOnly(String subcategoryId) async {
-  //   final url = Uri.parse('https://sks.sitsolutions.co.in/view_category_post');
-  //
-  //   print('Making POST request to: $url');
-  //   print('Request body: {"subcategory": "$subcategoryId"}');
-  //
-  //   final response = await http.post(
-  //     url,
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: jsonEncode({
-  //       'subcategory': subcategoryId,
-  //       // Don't include child_subcategory parameter
-  //     }),
-  //   );
-  //
-  //   print('Response status: ${response.statusCode}');
-  //   print('Response body: ${response.body}');
-  //
-  //   if (response.statusCode == 200) {
-  //     final jsonData = jsonDecode(response.body);
-  //     return ViewCategoryPostModel.fromJson(jsonData);
-  //   } else {
-  //     throw HttpException(
-  //         'Failed to load posts. Status code: ${response.statusCode}');
-  //   }
-  // }
-
-
-
   void _navigateToPostDetails(String postId) async {
     try {
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Track view before navigating
       await _addViewToPost(postId);
-      // Fetch post details
       final postDetails = await ApiService.fetchPostDetails(postId);
-      debugPrint('Post details fetched: ${postDetails.toString()}');
 
-      // Close loading dialog
       if (!mounted) return;
       Navigator.of(context).pop();
 
-
-      // Navigate to post details screen
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -544,19 +512,11 @@ class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
         ),
       );
     } catch (e) {
-      // Close loading dialog
       if (!mounted) return;
       Navigator.of(context).pop();
-
       _showToast('Error loading post details');
-      debugPrint('Error in _navigateToPostDetails: $e');
-      // Show error
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('Error loading post details: $e')),
-      // );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -571,12 +531,9 @@ class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
               color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: false,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
         ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -588,236 +545,315 @@ class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
           ),
         ),
       ),
-      body: FutureBuilder<ViewCategoryPostModel>(
-        future: _postsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${snapshot.error}'),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _loadPosts,
-                    child: const Text('Retry'),
-                  ),
-                ],
+      body: Column(
+        children: [
+          // Padding(
+          //   padding: const EdgeInsets.all(12.0),
+          //   child: TextField(
+          //     controller: _searchController,
+          //     decoration: InputDecoration(
+          //       hintText: 'Search by location...',
+          //       prefixIcon: Icon(Icons.search),
+          //       suffixIcon: _searchQuery.isNotEmpty
+          //           ? IconButton(
+          //         icon: Icon(Icons.clear),
+          //         onPressed: () {
+          //           _searchController.clear();
+          //         },
+          //       )
+          //           : null,
+          //       border: OutlineInputBorder(
+          //         borderRadius: BorderRadius.circular(12),
+          //       ),
+          //
+          //     ),
+          //   ),
+          // ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by location...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+                    : null,
+
+                // Border when not focused
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.grey, width: 1.5),
+                ),
+
+                // Border when focused
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.green, width: 2.0),
+                ),
+
+                // Border when there's an error (optional)
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                ),
+
+                // Border when focused and there's an error (optional)
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.red, width: 2.0),
+                ),
+
+                // Default border fallback
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            );
-          }
-          final posts = snapshot.data?.details ?? [];
-          debugPrint('Loaded ${posts.length} posts');
+            ),
+          ),
 
-
-          if (posts.isEmpty) {
-            return const Center(child: Text("No posts available."));
-          }
-
-          return RefreshIndicator(
-            onRefresh: _loadPosts,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: posts.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 2 items per row
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.90, // Adjust this to fit your content better
-              ),
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                return InkWell(
-                  onTap: () => _navigateToPostDetails(post.id),
-                  child: Card( color: Colors.cyan.shade50,
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+          Expanded(
+            child: FutureBuilder<ViewCategoryPostModel>(
+              future: _postsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
-                          ),
-                          child: Image.network(
-                            post.photo,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: 120,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/images/placeholder.png',
-                              fit: BoxFit.fill,
-                              width: double.infinity,
-                              height: 120,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (post.name != null) ...[
-                                  Text(
-                                    post.name!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 4),
-                                // if (post.price != null) ...[
-                                //   Text(
-                                //     '₹${post.price}',
-                                //     style: const TextStyle(
-                                //       fontSize: 16,
-                                //       color: Colors.green,
-                                //       fontWeight: FontWeight.bold,
-                                //     ),
-                                //   ),
-                                // ],
-                                if (post.price != null || post.views.isNotEmpty) ...[
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      if (post.price != null)
-                                        Text(
-                                          '₹${post.price}',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.remove_red_eye, size: 16, color: Colors.grey),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            post.views,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-
-                              ],
-                            ),
-                          ),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _loadPosts,
+                          child: const Text('Retry'),
                         ),
                       ],
                     ),
-                  ),
+                  );
+                }
+
+                final posts = snapshot.data?.details ?? [];
+
+                // 🔍 Filter by location address
+                final filteredPosts = posts.where((post) {
+                  final address = post.address?.toLowerCase() ?? '';
+                  return address.contains(_searchQuery);
+                }).toList();
+
+                if (filteredPosts.isEmpty) {
+                  return const Center(child: Text("No posts found."));
+                }
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final screenWidth = constraints.maxWidth;
+                    final crossAxisCount = screenWidth < 600
+                        ? 2
+                        : screenWidth < 900
+                        ? 3
+                        : 4;
+                    final spacing = 12.0;
+                    final totalHorizontalPadding =
+                        spacing * (crossAxisCount + 1);
+                    final itemWidth =
+                        (screenWidth - totalHorizontalPadding) / crossAxisCount;
+                    final itemHeight = 240;
+                    final aspectRatio = itemWidth / itemHeight;
+
+                    return RefreshIndicator(
+                      backgroundColor: Colors.white,
+                      color: Colors.green,
+                      onRefresh: _loadPosts,
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: filteredPosts.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: spacing,
+                          crossAxisSpacing: spacing,
+                          childAspectRatio: aspectRatio,
+                        ),
+                        itemBuilder: (context, index) {
+                          final post = filteredPosts[index];
+                          return InkWell(
+                            onTap: () => _navigateToPostDetails(post.id),
+                            child: Card(
+                              color: Colors.white,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 140,
+                                    child: post.photo.isNotEmpty
+                                        ? PageView.builder(
+                                      itemCount: post.photo.length,
+                                      itemBuilder: (context, index) {
+                                        return ClipRRect(
+                                          borderRadius:
+                                          const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                          child: Image.network(
+                                            post.photo[index],
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Image.asset(
+                                                    'assets/images/placeholder.png',
+                                                    fit: BoxFit.cover),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                        : Image.asset(
+                                      'assets/images/placeholder.png',
+                                      height: 140,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(10),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Text(
+                                            '₹${post.price}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment
+                                                .spaceBetween,
+                                            children: [
+                                              if (post.category != null)
+                                                Expanded(
+                                                  child: Text(
+                                                    _buildTypeText(post),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                    TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                      FontWeight.w800,
+
+                                                    ),
+                                                  ),
+                                                ),
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                      Icons.remove_red_eye,
+                                                      size: 16,
+                                                      color: Colors.grey),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    post.views,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             ),
-          );
-
-
-          //   RefreshIndicator(
-          //   onRefresh: _loadPosts,
-          //   child: GridView.builder(
-          //     padding: const EdgeInsets.all(12),
-          //     itemCount: posts.length,
-          //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          //       crossAxisCount: 2, // 2 items per row
-          //       mainAxisSpacing: 12,
-          //       crossAxisSpacing: 12,
-          //       childAspectRatio: 1.1, // Adjust for card height vs width
-          //     ),
-          //     itemBuilder: (context, index) {
-          //       final post = posts[index];
-          //       return InkWell(
-          //         onTap: () => _navigateToPostDetails(post.id),
-          //         child: Card(
-          //           elevation: 3,
-          //           shape: RoundedRectangleBorder(
-          //             borderRadius: BorderRadius.circular(12),
-          //           ),
-          //           child: Column(
-          //             crossAxisAlignment: CrossAxisAlignment.start,
-          //             children: [
-          //               ClipRRect(
-          //                 borderRadius: const BorderRadius.only(
-          //                   topLeft: Radius.circular(12),
-          //                   topRight: Radius.circular(12),
-          //                 ),
-          //                 child: Image.network(
-          //                   post.photo,
-          //                   fit: BoxFit.cover,
-          //                   width: double.infinity,
-          //                   height: 120,
-          //                   errorBuilder: (_, __, ___) => Image.asset(
-          //                     'assets/images/placeholder.png',
-          //                     fit: BoxFit.cover,
-          //                     width: double.infinity,
-          //                     height: 80,
-          //                   ),
-          //                 ),
-          //               ),
-          //               Padding(
-          //                 padding: const EdgeInsets.all(10),
-          //                 child: Column(
-          //                   crossAxisAlignment: CrossAxisAlignment.start,
-          //                   children: [
-          //                     if (post.name != null) ...[
-          //                       Text(
-          //                         post.name!,
-          //                         maxLines: 1,
-          //                         overflow: TextOverflow.ellipsis,
-          //                         style: const TextStyle(
-          //                           fontSize: 16,
-          //                           fontWeight: FontWeight.w600,
-          //                         ),
-          //                       ),
-          //                     ],
-          //                     const SizedBox(height: 0),
-          //                     if (post.price != null) ...[
-          //                       Text(
-          //                         '₹${post.price}',
-          //                         style: const TextStyle(
-          //                           fontSize: 14,
-          //                           color: Colors.green,
-          //                           fontWeight: FontWeight.bold,
-          //                         ),
-          //                       ),
-          //                     ],
-          //                   ],
-          //                 ),
-          //               ),
-          //             ],
-          //           ),
-          //         ),
-          //       );
-          //     },
-          //   ),
-          // );
-
-        },
+          ),
+        ],
       ),
     );
   }
+
+  String _buildTypeText(PostDetail post) {
+    if (post.type != null && post.subType != null) {
+      return '${post.type} > ${post.subType}';
+    } else if (post.type != null) {
+      return post.type!;
+    } else if (post.subType != null) {
+      return post.subType!;
+    } else {
+      return '';
+    }
+  }
 }
 
+// String _buildTypeText(PostDetail post) {
+//   final category = post.category?.trim() ?? '';
+//   final type = post.type?.trim() ?? '';
+//   final subType = post.subType?.trim() ?? '';
+//
+//   final parts = [category, type, subType].where((part) => part.isNotEmpty).toList();
+//   return parts.join(' - ');
+// }
+String _buildTypeText(PostDetail post) {
+  final category = post.category?.trim() ?? '';
+  final type = post.type?.trim() ?? '';
+  final subType = post.subType?.trim() ?? '';
 
+  // Full list with all non-empty values
+  final parts = [category, type, subType].where((part) => part.isNotEmpty).toList();
 
+  final fullText = parts.join(' - ');
 
+  // If it matches specific format with category at the beginning, remove category
+  if (category == 'चारा' && parts.length == 3) {
+    return [type, subType].where((p) => p.isNotEmpty).join(' - ');
+  }
 
+  return fullText;
+}
+
+// String _buildTypeText(PostDetail post) {
+//   final type = post.type?.trim() ?? '';
+//   final subType = post.subType?.trim() ?? '';
+//
+//   if (type.isNotEmpty && subType.isNotEmpty) {
+//     return '$type - $subType'; // 👉 हिरवा चारा-मका
+//   } else if (type.isNotEmpty) {
+//     return type; // 👉 हिरवा चारा
+//   } else {
+//     return '';
+//   }
+// }
 
 class ViewCategoryPostModel {
   final String status;
@@ -832,7 +868,7 @@ class ViewCategoryPostModel {
 
   factory ViewCategoryPostModel.fromJson(Map<String, dynamic> json) {
     return ViewCategoryPostModel(
-      status: json['status']?.toString() ?? 'error', // Default to 'error'
+      status: json['status']?.toString() ?? 'error',
       message: json['message']?.toString() ?? '',
       details: json['details'] != null
           ? List<PostDetail>.from(
@@ -842,13 +878,16 @@ class ViewCategoryPostModel {
     );
   }
 }
-
 class PostDetail {
   final String id;
-  final String photo;
+  final List<String> photo;
   final String price;
-  final String? name; // Keep as nullable if it can be null
+  final String? name;
   final String views;
+  final String? category;
+  final String? type;     // प्रकार
+  final String? subType;  // उप-प्रकार
+  final String? address;  // Add this line
 
   PostDetail({
     required this.id,
@@ -856,18 +895,69 @@ class PostDetail {
     required this.price,
     this.name,
     required this.views,
+    this.category,
+    this.type,
+    this.subType,
+    this.address, // Add this line
   });
 
   factory PostDetail.fromJson(Map<String, dynamic> json) {
     return PostDetail(
       id: json['id']?.toString() ?? '',
-      photo: json['photo']?.toString() ?? '',
-      price: json['price']?.toString() ?? '0', // Default to '0' if null
-      name: json['name']?.toString(), // Can be null
-      views: json['views'] ?? '0',
+      photo: (json['photo'] as String?)
+          ?.split(',')
+          .map((e) => e.trim())
+          .toList() ?? [],
+      price: json['price']?.toString() ?? '0',
+      name: json['name']?.toString(),
+      views: json['views']?.toString() ?? '0',
+      category: json['कॅटेगरी']?.toString(),
+      type: json['प्रकार']?.toString(),
+      subType: json['उप-प्रकार']?.toString(),
+      address: json['address']?.toString(), // Parse address here
     );
   }
 }
+
+// class PostDetail {
+//   final String id;
+//   final List<String> photo;
+//   final String price;
+//   final String? name;
+//   final String views;
+//   final String? category;
+//   final String? type;     // प्रकार
+//   final String? subType;  // उप-प्रकार
+//
+//   PostDetail({
+//     required this.id,
+//     required this.photo,
+//     required this.price,
+//     this.name,
+//     required this.views,
+//     this.category,
+//     this.type,
+//     this.subType,
+//   });
+//
+//   factory PostDetail.fromJson(Map<String, dynamic> json) {
+//     return PostDetail(
+//       id: json['id']?.toString() ?? '',
+//       photo: (json['photo'] as String?)
+//           ?.split(',')
+//           .map((e) => e.trim())
+//           .toList() ?? [],
+//       price: json['price']?.toString() ?? '0',
+//       name: json['name']?.toString(),
+//       views: json['views']?.toString() ?? '0',
+//       category: json['कॅटेगरी']?.toString(),
+//       type: json['प्रकार']?.toString(),
+//       subType: json['उप-प्रकार']?.toString(),
+//     );
+//   }
+// }
+
+
 
 
 class ChildSubcategoryModel {
@@ -901,8 +991,6 @@ class ChildSubcategoryModel {
     );
   }
 }
-
-
 
 // class PostDetailsScreen extends StatelessWidget {
 //   final CalculationData postDetails;
@@ -1080,112 +1168,3 @@ class ChildSubcategoryModel {
 //
 // }
 
-
-class CalculationData {
-  final String status;
-  final String message;
-  final CalculationDetails details;
-
-  CalculationData({
-    required this.status,
-    required this.message,
-    required this.details,
-  });
-
-  factory CalculationData.fromJson(Map<String, dynamic> json) {
-    return CalculationData(
-      status: json['status'],
-      message: json['message'],
-      details: CalculationDetails.fromJson(json['details']),
-    );
-  }
-}
-
-class CalculationDetails {
-  final String id;
-  final String userId;
-  final String catId;
-  final String subcategory;
-  final String childSubcategory;
-  final String? age;
-  final String? vet;
-  final String? milk;
-  final String? isGhabhan;
-  final String? ghabhanMonth;
-  final String weight;
-  final String unit;
-  final String? name;
-  final String price;
-  final String? useYear;
-  final String? shopName;
-  final String photo;
-  final String description;
-  final String? address;  // Made nullable
-  final String status;
-  final String isDeleted;
-  final String createdAt;
-  final String mobile;
-  final String category;
-  final String type;
-  final String subType;
-
-  CalculationDetails({
-    required this.id,
-    required this.userId,
-    required this.catId,
-    required this.subcategory,
-    required this.childSubcategory,
-    this.age,
-    this.vet,
-    this.milk,
-    this.isGhabhan,
-    this.ghabhanMonth,
-    required this.weight,
-    required this.unit,
-    this.name,
-    required this.price,
-    this.useYear,
-    this.shopName,
-    required this.photo,
-    required this.description,
-    this.address,  // Made nullable
-    required this.status,
-    required this.isDeleted,
-    required this.createdAt,
-    required this.mobile,
-    required this.category,
-    required this.type,
-    required this.subType,
-  });
-
-  factory CalculationDetails.fromJson(Map<String, dynamic> json) {
-    return CalculationDetails(
-      id: json['id']?.toString() ?? '',
-      userId: json['user_id']?.toString() ?? '',
-      catId: json['cat_id']?.toString() ?? '',
-      subcategory: json['subcategory']?.toString() ?? '',
-      childSubcategory: json['child_subcategory']?.toString() ?? '',
-      age: json['age']?.toString(),
-      vet: json['vet']?.toString(),
-      milk: json['milk']?.toString(),
-      isGhabhan: json['is_ghabhan']?.toString(),
-      ghabhanMonth: json['ghabhan_month']?.toString(),
-      weight: json['weight']?.toString() ?? '0',
-      unit: json['unit']?.toString() ?? '',
-      name: json['name']?.toString(),
-      price: json['price']?.toString() ?? '0',
-      useYear: json['use_year']?.toString(),
-      shopName: json['shop_name']?.toString(),
-      photo: json['photo']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      address: json['address']?.toString(),  // Can be null
-      status: json['status']?.toString() ?? '',
-      isDeleted: json['isdeleted']?.toString() ?? '',
-      createdAt: json['created_at']?.toString() ?? '',
-      mobile: json['mobile']?.toString()??'',
-      category: json['कॅटेगरी']?.toString() ?? '',
-      type: json['प्रकार']?.toString() ?? '',
-      subType: json['उप-प्रकार']?.toString() ?? '',
-    );
-  }
-}

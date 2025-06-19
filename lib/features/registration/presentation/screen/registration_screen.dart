@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:smart_gawali/features/login/presentation/screen/smart_login_screen.dart';
+import 'package:smart_gawali/features/AllScreens/presentation/screen/smart_login_screen.dart';
 
 import '../../../ApiService/api_service.dart';
 
@@ -24,32 +25,41 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final url = ApiService.doRegisterUrl;
-    // Uri.parse('https://sks.sitsolutions.co.in/do_register');
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "first_name": firstNameController.text.trim(),
-        "last_name": lastNameController.text.trim(),
-        "mobile": mobileController.text.trim(),
-        "password": passwordController.text.trim(),
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "first_name": firstNameController.text.trim(),
+          "last_name": lastNameController.text.trim(),
+          "mobile": mobileController.text.trim(),
+          "password": passwordController.text.trim(),
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final jsonResponse = jsonDecode(response.body);
-      if (jsonResponse['status'] == true || jsonResponse['success'] == true) {
-        showSuccessDialog(context);
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['status'].toString() == 'true' || jsonResponse['success'].toString() == 'true') {
+          showSuccessDialog(context, jsonResponse['message'] ?? 'नोंदणी यशस्वी झाली!');
+        } else {
+          // Check if the error message indicates the user is already registered
+          bool isAlreadyRegistered = jsonResponse['message']?.toString().toLowerCase().contains('already') ?? false;
+          showErrorDialog(
+              context,
+              jsonResponse['message'] ?? 'नोंदणी अयशस्वी',
+              isAlreadyRegistered: isAlreadyRegistered
+          );
+        }
       } else {
-        showErrorDialog(context, jsonResponse['message'] ?? 'नोंदणी अयशस्वी');
+        showErrorDialog(context, 'सर्व्हर त्रुटी: ${response.statusCode}');
       }
-    } else {
-      showErrorDialog(context, 'सर्व्हर त्रुटी: ${response.statusCode}');
+    } catch (e) {
+      showErrorDialog(context, 'नेटवर्क त्रुटी: $e');
     }
   }
 
-  void showSuccessDialog(BuildContext context) {
+  void showSuccessDialog(BuildContext context, String message) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -66,12 +76,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Colors.green, // Green for success
                   radius: 35,
                   child: Icon(Icons.check, color: Colors.white, size: 40),
                 ),
                 SizedBox(height: 16),
-                Text('नोंदणी यशस्वी', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'नोंदणी यशस्वी',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
                 SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -98,6 +117,74 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       },
     );
   }
+
+  void showErrorDialog(BuildContext context, String message, {bool isAlreadyRegistered = false}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                backgroundColor: isAlreadyRegistered ? Colors.red : Colors.green,
+                radius: 35,
+                child: Icon(
+                    isAlreadyRegistered ? Icons.error : Icons.check,
+                    color: Colors.white,
+                    size: 40
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                isAlreadyRegistered ? 'त्रुटी' : 'यशस्वी',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (isAlreadyRegistered) {
+                      Navigator.pop(context); // Just close the dialog
+                    } else {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                            (route) => false,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isAlreadyRegistered ? Colors.red : Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text('ठीक आहे', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+/*
   void showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -114,13 +201,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.green,
                 radius: 35,
-                child: Icon(Icons.close, color: Colors.white, size: 40),
+                child: Icon(Icons.verified, color: Colors.white, size: 40),
               ),
               SizedBox(height: 16),
-              Text('त्रुटी',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              // Text('त्रुटी',
+              //     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text(
                 message,
@@ -139,7 +226,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -154,28 +241,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       ),
     );
   }
+*/
 
-  // void showErrorDialog(BuildContext context, String message) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: Text('त्रुटी'),
-  //       content: Text(message),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.pushAndRemoveUntil(
-  //               context,
-  //               MaterialPageRoute(builder: (context) => LoginScreen()),
-  //                   (route) => false,
-  //             );
-  //           },
-  //           child: Text('ठीक आहे'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+
 
   @override
   Widget build(BuildContext context) {
@@ -195,34 +263,113 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   SizedBox(height: 5),
                   Text('Welcome back', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                   SizedBox(height: 20),
-                  Image.asset('assets/images/smart.png', height: 100),
-                  Image.asset('assets/images/login_logo.png', height: 140),
-                  Image.asset('assets/images/gawali.png', height: 140),
+                  Image.asset('assets/images/login_logo.png', height: 250),
                   SizedBox(height: 20),
 
                   /// First Name
                   buildLabel('पहिलं नाव'),
-                  buildTextField(
+            /*      buildTextField(
                     controller: firstNameController,
                     hintText: 'पहिलं नाव टाका',
                     icon: Icons.person,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'पहिलं नाव आवश्यक आहे';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'पहिलं नाव आवश्यक आहे';
+                      }
+                      if (value.contains(' ')) {
+                        return 'स्पेसची परवानगी नाही';
+                      }
                       return null;
                     },
-                  ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')), // Blocks spaces
+                    ],
+                  ),*/
+                buildTextField(
+                  controller: firstNameController,
+                  hintText: 'पहिलं नाव टाका',
+                  icon: Icons.person,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'पहिलं नाव आवश्यक आहे';
+                    }
+
+                    final RegExp nameRegExp = RegExp(r'^[a-zA-Zअ-हऀ-ॿ]+$');
+                    if (!nameRegExp.hasMatch(value.trim())) {
+                      return 'फक्त पहिलं नाव टाका (फक्त अक्षरे, स्पेस नाही)';
+                    }
+                    return null;
+                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Zअ-हऀ-ॿ]')), // Only letters, no spaces
+                  ],
+                ),
+
+
+
+                // buildTextField(
+                  //   controller: firstNameController,
+                  //   hintText: 'पहिलं नाव टाका',
+                  //   icon: Icons.person,
+                  //   validator: (value) {
+                  //     if (value == null || value.trim().isEmpty) return 'पहिलं नाव आवश्यक आहे';
+                  //     return null;
+                  //   },
+                  // ),
 
                   /// Last Name
                   buildLabel('आडनाव'),
-                  buildTextField(
+
+
+                  /*buildTextField(
                     controller: lastNameController,
-                    hintText: 'आडनाव टाका',
-                    icon: Icons.person_outline,
+                    hintText: 'आडनाव नाव टाका',
+                    icon: Icons.person,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'आडनाव आवश्यक आहे';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'आडनाव नाव आवश्यक आहे';
+                      }
+                      if (value.contains(' ')) {
+                        return 'स्पेसची परवानगी नाही';
+                      }
                       return null;
                     },
-                  ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')), // Blocks spaces
+                    ],
+                  ),*/
+                buildTextField(
+                  controller: lastNameController,
+                  hintText: 'आडनाव टाका',
+                  icon: Icons.person,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'आडनाव आवश्यक आहे';
+                    }
+
+                    final RegExp nameRegExp = RegExp(r'^[a-zA-Zअ-हऀ-ॿ]+$');
+                    if (!nameRegExp.hasMatch(value.trim())) {
+                      return 'फक्त अक्षरे टाका (स्पेस व संख्या नाही)';
+                    }
+                    return null;
+                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Zअ-हऀ-ॿ]')),
+                  ],
+                ),
+
+
+
+                // buildTextField(
+                  //   controller: lastNameController,
+                  //   hintText: 'आडनाव टाका',
+                  //   icon: Icons.person_outline,
+                  //   validator: (value) {
+                  //     if (value == null || value.trim().isEmpty) return 'आडनाव आवश्यक आहे';
+                  //     return null;
+                  //   },
+                  // ),
+
 
                   /// Mobile Number
                   buildLabel('मोबाईल नंबर'),
@@ -230,16 +377,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     controller: mobileController,
                     hintText: 'मोबाईल नंबर टाका',
                     icon: Icons.phone,
-                    keyboardType: TextInputType.phone,
+                    keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) return 'मोबाईल नंबर आवश्यक आहे';
                       if (!RegExp(r'^[0-9]{10}$').hasMatch(value.trim())) return 'वैध मोबाईल नंबर टाका';
                       return null;
                     },
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                   ),
 
+
                   /// Username (reusing mobileController here is not ideal – can add separate controller if needed)
-                  buildLabel('वापरकर्ता नाव'),
+                  /*   buildLabel('वापरकर्ता नाव'),
                   buildTextField(
                     controller: mobileController,
                     hintText: '',
@@ -249,7 +401,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       if (value == null || value.trim().isEmpty) return 'वापरकर्ता नाव आवश्यक आहे';
                       return null;
                     },
-                  ),
+                  ),*/
 
                   /// Password
                   buildLabel('पासवर्ड'),
@@ -278,7 +430,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'पासवर्ड आवश्यक आहे';
-                        if (value.length < 6) return 'किमान 6 अक्षरे असावीत';
+                        if (value.length < 8) return 'किमान 8 अक्षरे असावीत';
                         return null;
                       },
                     ),
@@ -331,6 +483,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters, // <-- Add this
   }) {
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -338,6 +491,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         controller: controller,
         keyboardType: keyboardType,
         validator: validator,
+        inputFormatters: inputFormatters, // <-- Use here
         decoration: InputDecoration(
           hintText: hintText,
           prefixIcon: Icon(icon),
@@ -349,4 +503,5 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       ),
     );
   }
+
 }
