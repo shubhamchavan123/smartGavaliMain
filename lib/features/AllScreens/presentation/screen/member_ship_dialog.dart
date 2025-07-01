@@ -1028,8 +1028,8 @@ class _MembershipDialogState extends State<MembershipDialog> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: selectedPlan?.id == plan.id ? Colors.blue[100] : null,
       child: ListTile(
-        title: Text(plan.name),
-        subtitle: Text('₹${plan.price} for ${plan.durationDays} days'),
+        title: Text(plan.name ,style: TextStyle(fontSize: 18,fontWeight: FontWeight.w600),),
+        subtitle: Text('₹${plan.price} for ${plan.durationDays} days',style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500),),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           setState(() {

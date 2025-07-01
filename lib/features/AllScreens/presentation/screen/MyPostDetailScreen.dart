@@ -4,6 +4,8 @@ import 'package:smart_gawali/features/AllScreens/presentation/screen/MyPostScree
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'FullImageScreen.dart';
+
 class MyPostDetailScreen extends StatefulWidget {
   final PostDetail post;
 
@@ -58,48 +60,63 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.post.photo.isNotEmpty)
-              // SizedBox(
-              //   height: 250,
-              //   child: PageView.builder(
-              //     itemCount: post.photo.length,
-              //     controller: PageController(viewportFraction: 0.9),
-              //     itemBuilder: (context, index) {
-              //       final imageUrl = post.photo[index];
-              //       print('Image URL at index $index: $imageUrl'); // 🔍 Debug print
-              //
-              //       return Padding(
-              //         padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              //         child: Container(
-              //           decoration: BoxDecoration(
-              //             border: Border.all(color: Colors.green, width: 3),
-              //             borderRadius: BorderRadius.circular(12),
-              //           ),
-              //           child: ClipRRect(
-              //             borderRadius: BorderRadius.circular(12),
-              //             child: Image.network(
-              //               imageUrl,
-              //               width: double.infinity,
-              //               height: 250,
-              //               fit: BoxFit.cover,
-              //               loadingBuilder: (context, child, loadingProgress) {
-              //                 if (loadingProgress == null) return child;
-              //                 return Container(
-              //                   color: Colors.grey[200],
-              //                   child: const Center(child: CircularProgressIndicator()),
-              //                 );
-              //               },
-              //               errorBuilder: (context, error, stackTrace) => Container(
-              //                 color: Colors.grey[300],
-              //                 child: const Center(
-              //                   child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+
+              // Column(
+              //   children: [
+              //     SizedBox(
+              //       height: 250,
+              //       child: PageView.builder(
+              //         itemCount: widget.post.photo.length,
+              //         controller: _pageController,
+              //         itemBuilder: (context, index) {
+              //           final imageUrl = widget.post.photo[index];
+              //           return Padding(
+              //             padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              //             child: Container(
+              //               decoration: BoxDecoration(
+              //                 border: Border.all(color: Colors.green, width: 3),
+              //                 borderRadius: BorderRadius.circular(12),
+              //               ),
+              //               child: ClipRRect(
+              //                 borderRadius: BorderRadius.circular(12),
+              //                 child: Image.network(
+              //                   imageUrl,
+              //                   width: double.infinity,
+              //                   height: 250,
+              //                   fit: BoxFit.cover,
+              //                   loadingBuilder: (context, child, loadingProgress) {
+              //                     if (loadingProgress == null) return child;
+              //                     return Container(
+              //                       color: Colors.grey[200],
+              //                       child: const Center(child: CircularProgressIndicator()),
+              //                     );
+              //                   },
+              //                   errorBuilder: (context, error, stackTrace) => Container(
+              //                     color: Colors.grey[300],
+              //                     child: const Center(
+              //                       child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+              //                     ),
+              //                   ),
               //                 ),
               //               ),
               //             ),
-              //           ),
-              //         ),
-              //       );
-              //     },
-              //   ),
+              //           );
+              //         },
+              //       ),
+              //     ),
+              //     const SizedBox(height: 8),
+              //     SmoothPageIndicator(
+              //       controller: _pageController,
+              //       count: widget.post.photo.length,
+              //       effect: const WormEffect(
+              //         dotHeight: 8,
+              //         dotWidth: 8,
+              //         spacing: 6,
+              //         activeDotColor: Colors.green,
+              //         dotColor: Colors.grey,
+              //       ),
+              //     ),
+              //   ],
               // ),
               Column(
                 children: [
@@ -117,24 +134,37 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
                               border: Border.all(color: Colors.green, width: 3),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                imageUrl,
-                                width: double.infinity,
-                                height: 250,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    color: Colors.grey[200],
-                                    child: const Center(child: CircularProgressIndicator()),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: Colors.grey[300],
-                                  child: const Center(
-                                    child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => FullImageScreen(
+                                      images: widget.post.photo,
+                                      initialIndex: index,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: double.infinity,
+                                  height: 250,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(child: CircularProgressIndicator()),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    color: Colors.grey[300],
+                                    child: const Center(
+                                      child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -144,18 +174,22 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  SmoothPageIndicator(
-                    controller: _pageController,
-                    count: widget.post.photo.length,
-                    effect: const WormEffect(
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      spacing: 6,
-                      activeDotColor: Colors.green,
-                      dotColor: Colors.grey,
+
+                  // ✅ Only show indicator if there are multiple images
+                  if (widget.post.photo.length > 1)
+                    const SizedBox(height: 8),
+                  if (widget.post.photo.length > 1)
+                    SmoothPageIndicator(
+                      controller: _pageController,
+                      count: widget.post.photo.length,
+                      effect: const WormEffect(
+                        dotHeight: 8,
+                        dotWidth: 8,
+                        spacing: 6,
+                        activeDotColor: Colors.green,
+                        dotColor: Colors.grey,
+                      ),
                     ),
-                  ),
                 ],
               ),
 
@@ -175,7 +209,7 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
                 !RegExp(r'^\d+$').hasMatch(widget.post.childSubcategory!))
               _buildInfoRow('उप-श्रेणी', widget.post.childSubcategory!), // Translated "Child Subcategory"
 
-            _buildInfoRow('पोस्ट केलेल्या तारीख', dateFormat.format(createdAt)), // Translated "Posted On"
+            _buildInfoRow('पोस्ट केलेली तारीख', dateFormat.format(createdAt)), // Translated "Posted On"
             const Divider(height: 30),
 
             _buildSectionTitle(widget.post.categoryName?.contains('पशु') == true
@@ -191,7 +225,7 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
             if (widget.post.weight != null)
               _buildInfoRow('वजन', '${widget.post.weight} ${widget.post.unit ?? ''}'),
             if (widget.post.milk != null)
-              _buildInfoRow('दुधाची उत्पादन', widget.post.milk!), // Milk Production
+              _buildInfoRow('दुधाची उत्पादन', '${widget.post.milk} लीटर'),// Milk Production
             if (widget.post.isGhabhan == '1')
               _buildInfoRow('गाभण',
                   widget.post.ghabhanMonth != null ? 'हो (${widget.post.ghabhanMonth} महिने)' : 'हो'),
@@ -265,7 +299,29 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  // Widget _buildInfoRow(String label, String value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 6),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         SizedBox(
+  //           width: 120,
+  //           child: Text(
+  //             '$label:',
+  //             style: const TextStyle(fontWeight: FontWeight.w800,fontSize: 18),
+  //           ),
+  //         ),
+  //         Expanded(
+  //           child: Text(value.isNotEmpty ? value : 'Not specified', style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 16),),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  Widget _buildInfoRow(String label, String? value) {
+    if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -274,17 +330,38 @@ class _MyPostDetailScreenState extends State<MyPostDetailScreen> {
           SizedBox(
             width: 120,
             child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 16),
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
           ),
+          const Text(
+            ':  ',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(value.isNotEmpty ? value : 'Not specified', style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 14),),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
 }
 
 Future<void> _makePhoneCall(BuildContext context, String phoneNumber) async {

@@ -300,9 +300,23 @@ class _LoginScreenState extends State<LoginScreen> {
     await prefs.setString('mobile', userData['mobile']?.toString() ?? '');
     await prefs.setString('user_id', userData['user_id']?.toString() ?? '');
     await prefs.setString('token', userData['token']?.toString() ?? '');
+    await prefs.setString('address', userData['address']?.toString() ?? '');
+    await prefs.setString('profile', userData['profile']?.toString() ?? '');
     await prefs.setBool('isLoggedIn', true);
 
-    print("User data saved.");
+    print('--- Saved User Data ---');
+    print('userData  : ${prefs.getString('userData')}');
+    print('id        : ${prefs.getString('id')}');
+    print('name      : ${prefs.getString('name')}');
+    print('mobile    : ${prefs.getString('mobile')}');
+    print('user_id   : ${prefs.getString('user_id')}');
+    print('token     : ${prefs.getString('token')}');
+    print('address     : ${prefs.getString('address')}');
+    print('profile     : ${prefs.getString('profile')}');
+    print('isLoggedIn: ${prefs.getBool('isLoggedIn')}');
+    print('------------------------');
+
+    print("Login User data saved.");
   }
 
   Future<void> loginUser() async {
@@ -334,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('device_token', deviceToken);
-        print("Device token saved after login: $deviceToken");
+        print("Login Device token saved after login: $deviceToken");
 
         showSuccessDialog(context);
       } else {
@@ -352,27 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // void showSuccessDialog(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (_) => AlertDialog(
-  //       title: Text("यशस्वीपणे लॉगिन"),
-  //       content: Text("आपण यशस्वीरित्या लॉगिन केले आहे."),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.of(context).pop();
-  //             Navigator.pushReplacement(
-  //               context,
-  //               MaterialPageRoute(builder: (_) => HomeScreen()),
-  //             );
-  //           },
-  //           child: Text("ठीक आहे"),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+
 
   @override
   Widget build(BuildContext context) {
@@ -522,14 +516,19 @@ class _LoginScreenState extends State<LoginScreen> {
         fillColor: Colors.grey[100],
       ),
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'पासवर्ड आवश्यक आहे';
-        }
-        if (value.trim().length < 6) {
-          return 'पासवर्ड किमान 6 अक्षरे असावे';
-        }
+        if (value == null || value.isEmpty) return 'पासवर्ड आवश्यक आहे';
+        if (value.length < 8) return 'पासवर्ड किमान 8 अक्षरे असावे';
         return null;
       },
+      // validator: (value) {
+      //   if (value == null || value.trim().isEmpty) {
+      //     return 'पासवर्ड आवश्यक आहे';
+      //   }
+      //   if (value.trim().length < 6) {
+      //     return 'पासवर्ड किमान 6 अक्षरे असावे';
+      //   }
+      //   return null;
+      // },
     );
   }
 }

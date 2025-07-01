@@ -468,7 +468,7 @@ class _AddToCartState extends State<AddToCart> {
           final products = provider.products;
 
           if (products.isEmpty) {
-            return const Center(child: Text("उत्पादने उपलब्ध नाहीत."));
+            return const Center(child: Text("उत्पादने उपलब्ध नाहीत.",style: TextStyle(fontSize: 20,fontWeight: FontWeight.w600),));
           }
 
           return GridView.builder(
@@ -614,7 +614,7 @@ class _AddToCartState extends State<AddToCart> {
                             onPressed: () {
                               provider.increment(product);
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                content: Text('Product added to cart'),
+                                content: Text('उत्पादन यशस्वीरित्या कार्टमध्ये जोडले'),
                                 duration: Duration(seconds: 1),
                               ));
                             },

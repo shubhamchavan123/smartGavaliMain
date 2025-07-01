@@ -16,7 +16,8 @@ import '../category/presentation/screen/calcium_mineral_mixture_product_list_mod
 import '../category/presentation/screen/calcium_mineral_mixture_product_list_screen.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://sks.sitsolutions.co.in';
+  static const String _baseUrl = 'https://pashusuvidha.com';
+  ///                             https://pashusuvidha.com/
   ///  Set this to "test" or "live" as needed
   static const String paymentEnvironment = "test"; // or "live"
   // static const String baseUrl = 'https://sks.sitsolutions.co.in';
@@ -43,6 +44,7 @@ class ApiService {
   static Uri get notificationList => Uri.parse('$_baseUrl/notification_list');
   static Uri get placeOnlineProcess => Uri.parse('$_baseUrl/place_online_process');
   static Uri get deleteAccount => Uri.parse('$_baseUrl/delete_account');
+  static Uri get productList => Uri.parse('$_baseUrl/product_list');
   static Uri get post => Uri.parse('$_baseUrl/public/Backend-Assets/images/Post/');
   // 'https://sks.sitsolutions.co.in/public/Backend-Assets/images/Post/';
 

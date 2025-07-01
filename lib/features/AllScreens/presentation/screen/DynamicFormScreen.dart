@@ -1030,7 +1030,7 @@ class _DynamicFormScreenState extends State<DynamicFormScreen> {
                   return '${field['label']} आवश्यक आहे';
                 }
                 final number = num.tryParse(value ?? '');
-                if (number == null || number <= 0) {
+                if (number == null || number < 0) {
                   return '${field['label']} फक्त सकारात्मक (positive) संख्या असावी';
                 }
               }

@@ -29,7 +29,10 @@ class CalciumMineralProductProvider with ChangeNotifier {
 
     try {
       final response = await http
-          .get(Uri.parse('https://sks.sitsolutions.co.in/product_list'));
+          .get(
+          ApiService.productList,
+          // Uri.parse('https://sks.sitsolutions.co.in/product_list')
+      );
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
@@ -87,6 +90,7 @@ class CalciumMineralProductProvider with ChangeNotifier {
     _quantities.clear();
     _saveCartToPreferences();
     notifyListeners();
+
   }
 
   int getQuantity(CalciumMineralMixtureProductListModel product) {

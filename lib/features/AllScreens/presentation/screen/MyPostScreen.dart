@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../ApiService/api_service.dart';
 import '../../../home/presentation/screen/HomeScreen.dart';
@@ -344,6 +346,7 @@ import 'package:http/http.dart' as http;
 
 import 'MyPostDetailScreen.dart';
 
+
 class MyPostScreen extends StatefulWidget {
   const MyPostScreen({super.key});
 
@@ -355,6 +358,7 @@ class _MyPostScreenState extends State<MyPostScreen> {
   List<PostDetail> posts = [];
   bool isLoading = true;
   String errorMessage = '';
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
@@ -721,106 +725,358 @@ class _MyPostScreenState extends State<MyPostScreen> {
             ),
           ),
         ),
+        // body: RefreshIndicator(
+        //   backgroundColor: Colors.white,
+        //   color: Colors.green,
+        //   onRefresh: fetchUserPosts,
+        //   child: isLoading
+        //       ? const Center(
+        //           child: CircularProgressIndicator(
+        //           color: Colors.green,
+        //         ))
+        //       : errorMessage.isNotEmpty
+        //           ? Center(child: Text('पोस्ट उपलब्ध नाहीत',style: TextStyle(fontSize: 20,fontWeight: FontWeight.w600),))
+        //           : posts.isEmpty
+        //               ? const Center(child: Text('पोस्ट उपलब्ध नाहीत',style: TextStyle(fontSize: 25,fontWeight: FontWeight.w600),))
+        //               : ListView.builder(
+        //                   physics: const AlwaysScrollableScrollPhysics(),
+        //                   padding: const EdgeInsets.all(12),
+        //                   itemCount: posts.length,
+        //                   itemBuilder: (context, index) {
+        //                     final post = posts[index];
+        //                     return GestureDetector(
+        //                       onTap: () {
+        //                         Navigator.push(
+        //                           context,
+        //                           MaterialPageRoute(
+        //                             builder: (_) => MyPostDetailScreen(post: post),
+        //                           ),
+        //                         );
+        //                       },
+        //                       child: Card(
+        //                         color: Colors.white,
+        //                         margin: const EdgeInsets.only(bottom: 16),
+        //                         elevation: 2,
+        //                         shape: RoundedRectangleBorder(
+        //                           borderRadius: BorderRadius.circular(12),
+        //                         ),
+        //                         child: Padding(
+        //                           padding: const EdgeInsets.all(12),
+        //                           child: Column(
+        //                             crossAxisAlignment: CrossAxisAlignment.start,
+        //                             children: [
+        //                               Row(
+        //                                 children: [
+        //                                   Text('Post ${index + 1}',
+        //                                       style: const TextStyle(
+        //                                           fontWeight: FontWeight.bold)),
+        //                                   const Spacer(),
+        //                                   const Icon(Icons.calendar_today,
+        //                                       size: 16),
+        //                                   const SizedBox(width: 4),
+        //                                   Text(post.createdAt
+        //                                       .split(' ')
+        //                                       .first
+        //                                       .replaceAll('-', '/')),
+        //                                 ],
+        //                               ),
+        //                               const SizedBox(height: 8),
+        //
+        //                               Column(
+        //                                 crossAxisAlignment:
+        //                                     CrossAxisAlignment.center,
+        //                                 children: [
+        //
+        //                                   Column(
+        //                                     children: [
+        //                                       ClipRRect(
+        //                                         borderRadius: BorderRadius.circular(8),
+        //                                         child: post.photo != null && post.photo!.isNotEmpty
+        //                                             ? SizedBox(
+        //                                           height: 200, // Set consistent height
+        //                                           width: double.infinity,
+        //                                           child: CarouselSlider(
+        //                                             options: CarouselOptions(
+        //                                               height: 200, // Must match SizedBox height
+        //                                               viewportFraction: 1.0,
+        //                                               enableInfiniteScroll: false,
+        //                                               enlargeCenterPage: false,
+        //                                               onPageChanged: (index, reason) {
+        //                                                 setState(() {
+        //                                                   _currentImageIndex = index;
+        //                                                 });
+        //                                               },
+        //                                             ),
+        //                                             items: post.photo!.map((url) {
+        //                                               return Container(
+        //                                                 width: double.infinity,
+        //                                                 height: 200,
+        //                                                 child: ClipRRect(
+        //                                                   borderRadius: BorderRadius.circular(8),
+        //                                                   child: Image.network(
+        //                                                     url,
+        //                                                     fit: BoxFit.fill, // ✅ Best fit for carousels
+        //                                                     width: double.infinity,
+        //                                                     height: double.infinity,
+        //                                                     loadingBuilder: (context, child, loadingProgress) {
+        //                                                       if (loadingProgress == null) return child;
+        //                                                       return Container(
+        //                                                         color: Colors.grey[200],
+        //                                                         child: const Center(child: CircularProgressIndicator()),
+        //                                                       );
+        //                                                     },
+        //                                                     errorBuilder: (_, __, ___) => Container(
+        //                                                       color: Colors.grey[200],
+        //                                                       child: const Icon(Icons.broken_image, size: 40),
+        //                                                     ),
+        //                                                   ),
+        //                                                 ),
+        //                                               );
+        //                                             }).toList(),
+        //                                           ),
+        //                                         )
+        //                                             : Container(
+        //                                           height: 200,
+        //                                           width: double.infinity,
+        //                                           color: Colors.grey[200],
+        //                                           child: const Center(
+        //                                             child: Icon(Icons.image, size: 50),
+        //                                           ),
+        //                                         ),
+        //                                       ),
+        //
+        //                                       if (post.photo != null && post.photo!.length > 1)
+        //                                         Padding(
+        //                                           padding: const EdgeInsets.only(top: 8),
+        //                                           child: AnimatedSmoothIndicator(
+        //                                             activeIndex: _currentImageIndex,
+        //                                             count: post.photo!.length,
+        //                                             effect: ExpandingDotsEffect(
+        //                                               activeDotColor: Colors.green,
+        //                                               dotColor: Colors.grey.shade300,
+        //                                               dotHeight: 8,
+        //                                               dotWidth: 10,
+        //                                             ),
+        //                                           ),
+        //                                         ),
+        //                                     ],
+        //                                   ),
+        //
+        //
+        //                                   const SizedBox(width: 12),
+        //                                   _buildPostDetails(post),
+        //                                 ],
+        //                               ),
+        //
+        //                               const SizedBox(height: 12),
+        //                               _buildPostFooter(post),
+        //                             ],
+        //                           ),
+        //                         ),
+        //                       ),
+        //                     );
+        //                   },
+        //                 ),
+        // ),
         body: RefreshIndicator(
           backgroundColor: Colors.white,
           color: Colors.green,
           onRefresh: fetchUserPosts,
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                  color: Colors.green,
-                ))
+            child: CircularProgressIndicator(
+              color: Colors.green,
+            ),
+          )
               : errorMessage.isNotEmpty
-                  ? Center(child: Text(errorMessage))
-                  : posts.isEmpty
-                      ? const Center(child: Text('No posts found'))
-                      : ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(12),
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post = posts[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MyPostDetailScreen(post: post),
+              ? ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.8, // Adjust as needed
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.info_outline, // You can use Icons.remove_shopping_cart_outlined if preferred
+                        size: 60,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'पोस्ट उपलब्ध नाहीत',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              ),
+            ],
+          )
+              : posts.isEmpty
+              ? ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              SizedBox(height: 200),
+              Center(
+                child: Text(
+                  'पोस्ट उपलब्ध नाहीत',
+                  style:
+                  TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          )
+              : ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12),
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final post = posts[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MyPostDetailScreen(post: post),
+                    ),
+                  );
+                },
+                child: Card(
+                  color: Colors.white,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('Post ${index + 1}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            const Spacer(),
+                            const Icon(Icons.calendar_today, size: 16),
+                            const SizedBox(width: 4),
+                            Text(post.createdAt
+                                .split(' ')
+                                .first
+                                .replaceAll('-', '/')),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: post.photo != null &&
+                                  post.photo!.isNotEmpty
+                                  ? SizedBox(
+                                height: 200,
+                                width: double.infinity,
+                                child: CarouselSlider(
+                                  options: CarouselOptions(
+                                    height: 200,
+                                    viewportFraction: 1.0,
+                                    enableInfiniteScroll: false,
+                                    enlargeCenterPage: false,
+                                    onPageChanged:
+                                        (index, reason) {
+                                      setState(() {
+                                        _currentImageIndex = index;
+                                      });
+                                    },
                                   ),
-                                );
-                              },
-                              child: Card(
-                                color: Colors.white,
-                                margin: const EdgeInsets.only(bottom: 16),
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text('Post ${index + 1}',
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          const Spacer(),
-                                          const Icon(Icons.calendar_today,
-                                              size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(post.createdAt
-                                              .split(' ')
-                                              .first
-                                              .replaceAll('-', '/')),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: post.photo != null && post.photo!.isNotEmpty
-                                                ? Image.network(
-                                              post.photo![0], // safe to access now
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.fill,
-                                              errorBuilder: (_, __, ___) => Container(
-                                                width: 100,
-                                                height: 100,
+                                  items: post.photo!.map((url) {
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 200,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                        BorderRadius.circular(
+                                            8),
+                                        child: Image.network(
+                                          url,
+                                          fit: BoxFit.fill,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          loadingBuilder: (context,
+                                              child,
+                                              loadingProgress) {
+                                            if (loadingProgress ==
+                                                null) return child;
+                                            return Container(
+                                              color:
+                                              Colors.grey[200],
+                                              child: const Center(
+                                                  child:
+                                                  CircularProgressIndicator()),
+                                            );
+                                          },
+                                          errorBuilder: (_, __,
+                                              ___) =>
+                                              Container(
                                                 color: Colors.grey[200],
-                                                child: const Icon(Icons.broken_image),
+                                                child: const Icon(
+                                                    Icons.broken_image,
+                                                    size: 40),
                                               ),
-                                            )
-                                                : Container(
-                                              width: 100,
-                                              height: 100,
-                                              color: Colors.grey[200],
-                                              child: const Icon(Icons.image),
-                                            ),
-                                          ),
-
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                              child: _buildPostDetails(post)),
-                                        ],
+                                        ),
                                       ),
-
-                                      const SizedBox(height: 12),
-                                      _buildPostFooter(post),
-                                    ],
+                                    );
+                                  }).toList(),
+                                ),
+                              )
+                                  : Container(
+                                height: 200,
+                                width: double.infinity,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.image,
+                                      size: 50),
+                                ),
+                              ),
+                            ),
+                            if (post.photo != null &&
+                                post.photo!.length > 1)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: AnimatedSmoothIndicator(
+                                  activeIndex: _currentImageIndex,
+                                  count: post.photo!.length,
+                                  effect: ExpandingDotsEffect(
+                                    activeDotColor: Colors.green,
+                                    dotColor: Colors.grey.shade300,
+                                    dotHeight: 8,
+                                    dotWidth: 10,
                                   ),
                                 ),
                               ),
-                            );
-                          },
+                          ],
                         ),
+                        const SizedBox(width: 12),
+                        _buildPostDetails(post),
+                        const SizedBox(height: 12),
+                        _buildPostFooter(post),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
+
       ),
     );
   }

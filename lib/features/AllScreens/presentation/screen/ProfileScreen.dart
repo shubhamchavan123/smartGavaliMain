@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:smart_gawali/features/home/presentation/screen/HomeScreen.dart';
 import 'package:smart_gawali/features/AllScreens/presentation/screen/MyPurchaseScreen.dart';
 import 'package:smart_gawali/features/AllScreens/presentation/screen/ProfileFormScreen.dart';
 import 'package:smart_gawali/features/AllScreens/presentation/screen/smart_login_screen.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -11,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../../../ApiService/api_service.dart';
 import '../../../registration/presentation/screen/registration_screen.dart';
+import 'PricingCardScreen.dart';
 import 'SoldOutPostScreen.dart';
 import 'SubscriptionScreen.dart';
 
@@ -22,14 +25,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+
+  File? _localProfileImage;
   File? _profileImage;
   String _name = '';
-
+  String _mobile = '';
+  String _address = '';
+  String? _networkImageUrl;
   @override
   void initState() {
     super.initState();
     _loadUserData(); // Load both image and name
   }
+
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,32 +45,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (userDataString != null) {
       final userData = json.decode(userDataString);
-      final imagePath = userData['imagePath'] ?? '';
+      final profile = userData['profile'] ?? '';
       final name = userData['name'] ?? '';
+      final mobile = userData['mobile'] ?? '';
+      final address = userData['address'] ?? '';
 
-      if (imagePath.toString().isNotEmpty && File(imagePath).existsSync()) {
-        setState(() {
-          _profileImage = File(imagePath);
-        });
+      if (profile.toString().isNotEmpty) {
+        if (Uri.tryParse(profile)?.isAbsolute == true) {
+          _networkImageUrl = profile;
+          _localProfileImage = null;
+        } else if (File(profile).existsSync()) {
+          _localProfileImage = File(profile);
+          _networkImageUrl = null;
+        }
       }
 
       setState(() {
         _name = name;
+        _mobile = mobile;
+        _address = address;
       });
     }
   }
 
-
   Future<void> _navigateToEditProfile() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ProfileFormScreen()),
+      MaterialPageRoute(builder: (_) => const ProfileFormScreen()),
     );
-    await _loadUserData(); // ✅ Reload image after editing
+    await _loadUserData();
+  }
+  bool _hasNetworkImage() {
+    final prefs = SharedPreferences.getInstance();
+    prefs.then((prefs) {
+      final userDataString = prefs.getString('userData');
+      if (userDataString != null) {
+        final userData = json.decode(userDataString);
+        final profile = userData['profile'];
+        if (Uri.tryParse(profile)?.isAbsolute == true) {
+          setState(() {
+            _networkImageUrl = profile;
+          });
+          return true;
+        }
+      }
+    });
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final imageProvider = _localProfileImage != null
+        ? FileImage(_localProfileImage!)
+        : (_networkImageUrl != null
+        ? NetworkImage(_networkImageUrl!)
+        :  AssetImage('assets/icons/profile_img.png'))
+    as ImageProvider;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -101,13 +141,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Center(
             child: Stack(
               children: [
+             /*   CircleAvatar(
+                  radius: 50,
+                  backgroundImage: imageProvider != null
+                      ? imageProvider
+                      : AssetImage('assets/icons/profile_img.png'),
+                ),*/
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: _profileImage != null
-                      ? FileImage(_profileImage!)
-                      : const AssetImage('assets/icons/dummy_profile_ic.png')
-                          as ImageProvider,
+                  backgroundColor: Colors.grey.shade200,
+                  child: ClipOval(
+                    child: _localProfileImage != null
+                        ? Image.file(
+                      _localProfileImage!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    )
+                        : (_networkImageUrl != null && _networkImageUrl!.isNotEmpty
+                        ? CachedNetworkImage(
+                      imageUrl: _networkImageUrl!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                      const CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => Image.asset(
+                        'assets/icons/profile_img.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                        : Image.asset(
+                      'assets/icons/profile_img.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    )),
+                  ),
                 ),
+
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -123,15 +197,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 5),
           // const ProfileMenuItem(title: "सेटिंग"),
           Text(
-            _name,
+            ' $_name',
             style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Container(
+          //   height: 60,
+          //   width: MediaQuery.of(context).size.width * 0.92,
+          //   margin: const EdgeInsets.only(left: 20.0, right: 20),
+          //   padding: const EdgeInsets.symmetric(horizontal: 12),
+          //   alignment: Alignment.centerLeft,
+          //   decoration: BoxDecoration(
+          //     color: Colors.white,
+          //     borderRadius: BorderRadius.circular(8),
+          //     boxShadow: [
+          //       BoxShadow(
+          //         color: Colors.grey.withOpacity(0.3),
+          //         spreadRadius: 2,
+          //         blurRadius: 6,
+          //         offset: Offset(0, 2),
+          //       ),
+          //     ],
+          //   ),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     mainAxisAlignment: MainAxisAlignment.center,
+          //     children: [
+          //       AutoSizeText(
+          //         'मोबाईल नंबर: $_mobile',
+          //         maxLines: 1,
+          //         style: const TextStyle(
+          //           fontSize: 15,
+          //           fontWeight: FontWeight.w700,
+          //         ),
+          //       ),
+          //       AutoSizeText(
+          //         'पत्ता: $_address',
+          //         maxLines: 1,
+          //         minFontSize: 10,
+          //         style: const TextStyle(
+          //           fontSize: 15,
+          //           fontWeight: FontWeight.w700,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+// <<< inside your build method >>>
+          Container(
+            width: MediaQuery.of(context).size.width * 0.92,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Let the height expand to fit rows
+              children: [
+                _buildInfoRow('मोबाईल नंबर', _mobile),
+                _buildInfoRow('पत्ता', _address),
+                // Add more rows the same way:
+                // _buildInfoRow('ई-मेल', _email),
+              ],
+            ),
+          ),
+
+
+
+
+
+
 
           ProfileMenuItem(
             title: "माझी खरेदी",
@@ -168,6 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => SubscriptionScreen(userId: userId),
+                  // builder: (_) => PricingCardScreen(),
                 ),
               );
             },
@@ -180,7 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           ProfileMenuItem(
-            title: "डिलिट आऊट",
+            title: "डिलीट अकाउंट",
             onTap: () {
               showDeleteDialog(context);
             },
@@ -492,6 +645,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
 }
+
+Widget _buildInfoRow(String label, String? value) {
+  if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        const Text(
+          ': ',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 class DeleteAccountResponse {
   final String status;
   final String message;
@@ -524,7 +722,7 @@ class ProfileMenuItem extends StatelessWidget {
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        title: Text(title),
+        title: Text(title,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
       ),

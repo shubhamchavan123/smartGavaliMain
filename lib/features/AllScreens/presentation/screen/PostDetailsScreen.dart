@@ -428,6 +428,8 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../provider/calcium_mineral_product_provider.dart';
+import 'FullImageScreen.dart';
+import 'MyPostDetailScreen.dart';
 
 class PostDetailsScreen extends StatelessWidget {
   final CalculationData postDetails;
@@ -597,7 +599,7 @@ class PostDetailsScreen extends StatelessWidget {
             // Pricing and Measurements
             if (_shouldShowField(details.price) ||
                 _shouldShowField(details.weight))
-              _buildSectionHeader('किंमत आणि मोजमाप'),
+              // _buildSectionHeader('किंमत आणि मोजमाप'),
             if (_shouldShowField(details.price))
               _buildDetailRow(
                   Icons.currency_rupee, 'किंमत', '₹${details.price}'),
@@ -611,13 +613,13 @@ class PostDetailsScreen extends StatelessWidget {
                 _shouldShowField(details.milk) ||
                 _shouldShowField(details.isGhabhan) ||
                 _shouldShowField(details.ghabhanMonth))
-              _buildSectionHeader('प्राण्यांचे तपशील'),
+              // _buildSectionHeader('प्राण्यांचे तपशील'),
             if (_shouldShowField(details.age))
               _buildDetailRow(Icons.cake, 'वय', details.age!),
             if (_shouldShowField(details.vet))
               _buildDetailRow(Icons.medical_services, 'वेत', details.vet!),
             if (_shouldShowField(details.milk))
-              _buildDetailRow(Icons.local_drink, 'दूध', details.milk!),
+              _buildDetailRow(Icons.local_drink, 'दूध',  '${details.milk} लीटर'),
             if (_shouldShowField(details.isGhabhan))
               _buildDetailRow(
                   Icons.pregnant_woman, 'गभन आहे', details.isGhabhan!),
@@ -629,7 +631,7 @@ class PostDetailsScreen extends StatelessWidget {
             if (_shouldShowField(details.useYear) ||
                 _shouldShowField(details.shopName) ||
                 _shouldShowField(details.address))
-              _buildSectionHeader('अतिरिक्त माहिती'),
+              // _buildSectionHeader('अतिरिक्त माहिती'),
             if (_shouldShowField(details.useYear))
               _buildDetailRow(
                   Icons.calendar_view_month, 'वर्ष वापर', details.useYear!),
@@ -644,7 +646,7 @@ class PostDetailsScreen extends StatelessWidget {
             if (_shouldShowField(details.status) ||
                 _shouldShowField(details.isDeleted) ||
                 _shouldShowField(details.createdAt))
-              _buildSectionHeader('पोस्ट दिनांक'),
+              // _buildSectionHeader('पोस्ट दिनांक'),
             // if (_shouldShowField(details.status))
             //   _buildDetailRow(Icons.info, 'Status', details.status),
             // if (_shouldShowField(details.isDeleted))
@@ -727,7 +729,80 @@ class PostDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildImageCarousel(List<String> imageUrls) {
+  // Widget _buildImageCarousel(List<String> imageUrls) {
+  //   if (imageUrls.isEmpty) {
+  //     return Container(
+  //       width: double.infinity,
+  //       height: 250,
+  //       color: Colors.grey[300],
+  //       child: const Center(
+  //         child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+  //       ),
+  //     );
+  //   }
+  //
+  //   final PageController controller = PageController(viewportFraction: 0.9);
+  //
+  //   return Column(
+  //     children: [
+  //       SizedBox(
+  //         height: 250,
+  //         child: PageView.builder(
+  //           controller: controller,
+  //           itemCount: imageUrls.length,
+  //           itemBuilder: (context, index) {
+  //             final imageUrl = imageUrls[index];
+  //             return Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 4.0),
+  //               child: Container(
+  //                 decoration: BoxDecoration(
+  //                   border: Border.all(color: Colors.green, width: 1),
+  //                   borderRadius: BorderRadius.circular(12),
+  //                 ),
+  //                 child: ClipRRect(
+  //                   borderRadius: BorderRadius.circular(12),
+  //                   child: Image.network(
+  //                     imageUrl,
+  //                     width: double.infinity,
+  //                     height: 250,
+  //                     fit: BoxFit.cover,
+  //                     loadingBuilder: (context, child, loadingProgress) {
+  //                       if (loadingProgress == null) return child;
+  //                       return Container(
+  //                         color: Colors.grey[200],
+  //                         child: const Center(child: CircularProgressIndicator()),
+  //                       );
+  //                     },
+  //                     errorBuilder: (context, error, stackTrace) => Container(
+  //                       color: Colors.grey[300],
+  //                       child: const Center(
+  //                         child: Icon(Icons.broken_image,
+  //                             size: 40, color: Colors.grey),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       SmoothPageIndicator(
+  //         controller: controller,
+  //         count: imageUrls.length,
+  //         effect: WormEffect(
+  //           dotColor: Colors.grey.shade400,
+  //           activeDotColor: Colors.green,
+  //           dotHeight: 10,
+  //           dotWidth: 10,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  /*Widget _buildImageCarousel(List<String> imageUrls) {
     if (imageUrls.isEmpty) {
       return Container(
         width: double.infinity,
@@ -786,39 +861,175 @@ class PostDetailsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        SmoothPageIndicator(
-          controller: controller,
-          count: imageUrls.length,
-          effect: WormEffect(
-            dotColor: Colors.grey.shade400,
-            activeDotColor: Colors.green,
-            dotHeight: 10,
-            dotWidth: 10,
+        if (imageUrls.length > 1) // 👈 This hides the indicator for single image
+          SmoothPageIndicator(
+            controller: controller,
+            count: imageUrls.length,
+            effect: WormEffect(
+              dotColor: Colors.grey.shade400,
+              activeDotColor: Colors.green,
+              dotHeight: 10,
+              dotWidth: 10,
+            ),
+          ),
+      ],
+    );
+  }
+*/
+  Widget _buildImageCarousel(List<String> imageUrls) {
+    if (imageUrls.isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 250,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+        ),
+      );
+    }
+
+    final PageController controller = PageController(viewportFraction: 0.9);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 250,
+          child: PageView.builder(
+            controller: controller,
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              final imageUrl = imageUrls[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullImageScreen(
+                        images: imageUrls,
+                        initialIndex: index,
+                      ),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.green, width: 1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey[200],
+                            child:
+                            const Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(Icons.broken_image,
+                                size: 40, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
+        const SizedBox(height: 8),
+        if (imageUrls.length > 1)
+          SmoothPageIndicator(
+            controller: controller,
+            count: imageUrls.length,
+            effect: WormEffect(
+              dotColor: Colors.grey.shade400,
+              activeDotColor: Colors.green,
+              dotHeight: 10,
+              dotWidth: 10,
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  // Widget _buildDetailRow(IconData icon, String label, String value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 10),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Icon(icon, color: Colors.green[700], size: 22),
+  //         const SizedBox(width: 12),
+  //         Expanded(
+  //           child: RichText(
+  //             text: TextSpan(
+  //               style: const TextStyle(fontSize: 18, color: Colors.black),
+  //               children: [
+  //                 TextSpan(
+  //                   text: '$label: ',
+  //                   style: const TextStyle(fontWeight: FontWeight.w700),
+  //                 ),
+  //                 TextSpan(text: value,
+  //                   style: const TextStyle(fontWeight: FontWeight.w500),
+  //                 ),
+  //
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  Widget _buildDetailRow(IconData icon, String label, String? value) {
+    if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: Colors.green[700], size: 22),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          const Text(
+            ':  ',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 16, color: Colors.black),
-                children: [
-                  TextSpan(
-                    text: '$label: ',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(text: value),
-                ],
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.black87,
               ),
             ),
           ),

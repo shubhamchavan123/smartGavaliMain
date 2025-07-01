@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:smart_gawali/features/ApiService/api_service.dart';
 import 'package:smart_gawali/features/category/presentation/screen/CategoryScreen.dart';
@@ -21,6 +27,7 @@ import '../../../category/presentation/screen/PostCategoryModel.dart';
 
 import '../../../services/get_server_key.dart';
 import '../../../services/notification_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -32,6 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final GetServerKey _getServerKey = GetServerKey();
 
   int _bottomNavIndex = 0;
+
+  // Add these variables
+  bool _isConnected = true;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
   // final iconList = <IconData>[
   //   Icons.home,
@@ -65,6 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _currentIndex = 0;
   final CarouselController _carouselController = CarouselController();
+  String? _networkImageUrl;
+  File? _localProfileImage;
+  String? _userName; // ✅ Declare here
 
   // @override
   // void initState() {
@@ -78,6 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    _checkInternetConnection();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      setState(() {
+        _isConnected = results.isNotEmpty && results.any((result) => result != ConnectivityResult.none);
+      });
+      if (_isConnected) {
+        // Refresh data when connection is restored
+        fetchData();
+      }
+    });
+    _loadUserData();
     notificationService.requestNotificationPermission();
     notificationService.getDeviceToken();
     // notificationService.firebaseInit(context);
@@ -85,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeNotifications();
     getServiceToken();
     fetchData();
+    _loadUserName();
     // Listen for new messages and bump the counter
     notificationService.initialize().then((_) {
       notificationService.firebaseInit(context);
@@ -97,6 +123,60 @@ class _HomeScreenState extends State<HomeScreen> {
         _notificationCount = notificationService.notifications.length;
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkInternetConnection() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    setState(() {
+      _isConnected = connectivityResult != ConnectivityResult.none;
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString('userData');
+
+    if (userDataString != null) {
+      final userData = json.decode(userDataString);
+      final profile = userData['profile']?.toString() ?? '';
+      final name = userData['name']?.toString() ?? '';
+
+      if (profile.isNotEmpty) {
+        if (Uri.tryParse(profile)?.isAbsolute == true) {
+          setState(() {
+            _networkImageUrl = profile;
+            _localProfileImage = null;
+          });
+        } else if (await File(profile).exists()) {
+          setState(() {
+            _localProfileImage = File(profile);
+            _networkImageUrl = null;
+          });
+        }
+      }
+
+      setState(() {
+
+        _userName = name; // Make sure this matches your existing variable
+      });
+    }
+  }
+  void _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString('userData');
+
+    if (userDataString != null) {
+      final userData = json.decode(userDataString);
+      setState(() {
+        _userName = userData['name'] ?? 'User'; // Replace 'name' with actual key
+      });
+    }
   }
 
   Future<void> _initializeNotifications() async {
@@ -139,6 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool get isSearching => _searchController.text.trim().isNotEmpty;
+
   Widget buildHomeContent() {
     return RefreshIndicator(
       onRefresh: () async {
@@ -151,19 +233,64 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 50),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              width: double.infinity,
+              height: 140,
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF2E7D32),
-                    Color(0xFFFFFFFF),
-                  ],
+                  colors: [Color(0xFF2E7D32), Color(0xFFFFFFFF)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.grey.shade300,
+                        backgroundImage: _networkImageUrl != null
+                            ? NetworkImage(_networkImageUrl!)
+                            : _localProfileImage != null
+                            ? FileImage(_localProfileImage!)
+                            : const AssetImage('assets/icons/profile_img.png')
+                        as ImageProvider,
+                      ),
+                    ),
+                  ),
+                  title: const Text(
+                    'Welcome',
+                    style: TextStyle(color: Colors.black54, fontSize: 14,fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    _userName ?? 'Loading...',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+
             ),
+
+
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -251,31 +378,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //   child: isLoading
-            //       ? Center(child: CircularProgressIndicator())
-            //       : CarouselSlider(
-            //           options: CarouselOptions(
-            //             height: 160,
-            //             autoPlay: true,
-            //             enlargeCenterPage: true,
-            //             viewportFraction: 1.0,
-            //             autoPlayInterval: Duration(seconds: 3),
-            //           ),
-            //           items: bannerImages.map((imageUrl) {
-            //             return ClipRRect(
-            //               borderRadius: BorderRadius.circular(16),
-            //               child: Image.network(
-            //                 imageUrl,
-            //                 fit: BoxFit.cover,
-            //                 width: double.infinity,
-            //               ),
-            //             );
-            //           }).toList(),
-            //         ),
-            // ),
-      Padding(
+        if (!isSearching) ...[
+           Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -320,11 +424,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+         ],
             // Heading and GridView
-            // Heading and GridView
+
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+               if (!isSearching) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -334,20 +440,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                ],
                 const SizedBox(height: 10),
                 isLoading
                     ? _buildShimmerGrid()
                     : filteredCategories.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 32),
-                              child: Text(
-                                'कोणतीही श्रेणी सापडली नाही', // "No categories found" in Marathi
-                                style:
-                                    TextStyle(fontSize: 16, color: Colors.grey),
-                              ),
-                            ),
-                          )
+                        ? SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5, // or full if you want
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.search_off_outlined,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'कोणतेही प्रोडक्ट सापडली नाही',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                )
                         : GridView.builder(
                   itemCount: filteredCategories.length,
                   shrinkWrap: true,
@@ -379,6 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
+           if (!isSearching) ...[
                 const SizedBox(height: 15),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -428,6 +551,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+           ],
                 SizedBox(
                   height: 20,
                 )
@@ -444,12 +568,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
-      body:
-          _bottomNavIndex == 0 ? buildHomeContent() : _screens[_bottomNavIndex],
+      body:_isConnected
+          ? (_bottomNavIndex == 0 ? buildHomeContent() : _screens[_bottomNavIndex])
+          : _buildNoInternetScreen(),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
           child: Icon(Icons.add, color: Colors.white),
           onPressed: () async {
+
+            // First check internet connection
+            final connectivityResult = await Connectivity().checkConnectivity();
+            final isConnected = connectivityResult.isNotEmpty &&
+                connectivityResult.any((r) => r != ConnectivityResult.none);
+
+            if (!isConnected) {
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(content: Text('No internet connection')),
+              // );
+              return;
+            }
+
             final result = await ApiService.verifySubscription();
 
             String subscriptionStatus = result['status'] ?? 'error';
@@ -542,43 +680,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               );
 
-              /*  showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (context) {
-                  return SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: isLoading
-                          ? Center(child: CircularProgressIndicator())
-                          : ListView.builder(
-                              itemCount: categoryItems.length,
-                              itemBuilder: (context, index) {
-                                final category = categoryItems[index];
-                                return ListTile(
-                                  title: Text(category.category),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => DynamicFormScreen(
-                                          categoryName: category.category,
-                                          categoryId: category.id,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  );
-                },
-              );*/
+
             } else {
               String message = '';
               if (subscriptionStatus == 'post_limit') {
@@ -680,110 +782,9 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             }
           }
-
-          /*onPressed: () async {
-          bool isSubscription = await ApiService.verifySubscription(); // Set this based on your logic
-          if (!isSubscription) {   /// !isSubscription
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Subscription Required'),
-                content: Text(
-                    'You need an active subscription to access this feature.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const MembershipDialog(),
-                      );
-
-                      // Navigator.pop(context);
-
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            showModalBottomSheet(
-              context: context,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              builder: (context) {
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: isLoading
-                        ? Center(child: CircularProgressIndicator())
-                        : ListView.builder(
-                            itemCount: categoryItems.length,
-                            itemBuilder: (context, index) {
-                              final category = categoryItems[index];
-                              return ListTile(
-                                title: Text(category.category),
-                                onTap: () {
-                                  Navigator.pop(context);
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => DynamicFormScreen(
-                                              categoryName: category.category,
-                                              categoryId: category.id,
-                                            )
-                                        //     AnimalArjaFormScreen(
-                                        //   categoryName: category.category,
-                                        //   // catId: int.tryParse(category.id) ?? 0,
-                                        //
-                                        // ),
-                                        ),
-                                  );
-
-                                  */ /*Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SubCategoryScreen(
-                                categoryId: category.id.toString(),
-                                categoryName: category.category,
-                              ),
-                            ),
-                          );*/ /*
-                                  ///
-                                  */ /*  showDialog(
-                                                  context: context,
-                                                  builder: (context) => MembershipDialog(),
-                                                );*/ /*
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                );
-              },
-            );
-          }
-        },*/
           ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-      //   itemCount: iconList.length,
-      //   tabBuilder: (int index, bool isActive) {
-      //     final color = isActive ? Colors.green : Colors.grey;
-      //     return Icon(iconList[index], color: color, size: 28);
-      //   },
-      //   activeIndex: _bottomNavIndex,
-      //   gapLocation: GapLocation.center,
-      //   notchSmoothness: NotchSmoothness.verySmoothEdge,
-      //   leftCornerRadius: 32,
-      //   rightCornerRadius: 32,
-      //   onTap: (index) => setState(() => _bottomNavIndex = index),
-      //   backgroundColor: Colors.white,
-      //   borderColor: Colors.green,
-      // ),
+
       bottomNavigationBar: AnimatedBottomNavigationBar.builder(
           itemCount: navItems.length,
           tabBuilder: (int index, bool isActive) {
@@ -818,110 +819,38 @@ class _HomeScreenState extends State<HomeScreen> {
           )),
     );
 
-    // Scaffold(
-    //   resizeToAvoidBottomInset: false,
-    //   backgroundColor: Colors.white,
-    //   body: _bottomNavIndex == 0 ? buildHomeContent() : _screens[_bottomNavIndex],
-    //
-    //   // Floating Action Button in the center
-    //   floatingActionButton: FloatingActionButton(
-    //     backgroundColor: Colors.green,
-    //     child: Icon(Icons.add, color: Colors.white),
-    //     onPressed: () async {
-    //       bool isSubscription = await ApiService.verifySubscription();
-    //       if (!isSubscription) {
-    //         showDialog(
-    //           context: context,
-    //           builder: (context) => AlertDialog(
-    //             title: Text('Subscription Required'),
-    //             content: Text('You need an active subscription to access this feature.'),
-    //             actions: [
-    //               TextButton(
-    //                 onPressed: () {
-    //                   Navigator.pop(context); // Close this dialog
-    //                   showDialog(
-    //                     context: context,
-    //                     builder: (context) => const MembershipDialog(),
-    //                   );
-    //                 },
-    //                 child: Text('OK'),
-    //               ),
-    //             ],
-    //           ),
-    //         );
-    //       } else {
-    //         showModalBottomSheet(
-    //           context: context,
-    //           shape: const RoundedRectangleBorder(
-    //             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    //           ),
-    //           builder: (context) {
-    //             return SizedBox(
-    //               height: MediaQuery.of(context).size.height * 0.4,
-    //               child: Padding(
-    //                 padding: const EdgeInsets.all(16),
-    //                 child: isLoading
-    //                     ? Center(child: CircularProgressIndicator())
-    //                     : ListView.builder(
-    //                   itemCount: categoryItems.length,
-    //                   itemBuilder: (context, index) {
-    //                     final category = categoryItems[index];
-    //                     return ListTile(
-    //                       title: Text(category.category),
-    //                       onTap: () {
-    //                         Navigator.pop(context);
-    //                         Navigator.push(
-    //                           context,
-    //                           MaterialPageRoute(
-    //                             builder: (_) => DynamicFormScreen(
-    //                               categoryName: category.category,
-    //                               categoryId: category.id,
-    //                             ),
-    //                           ),
-    //                         );
-    //                       },
-    //                     );
-    //                   },
-    //                 ),
-    //               ),
-    //             );
-    //           },
-    //         );
-    //       }
-    //     },
-    //   ),
-    //
-    //   // Align FAB in center
-    //   floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    //
-    //   // Bottom Navigation Bar
-    //   bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-    //     itemCount: navItems.length,
-    //     tabBuilder: (int index, bool isActive) {
-    //       final color = isActive ? Colors.green : Colors.grey;
-    //       return Column(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           Icon(navItems[index]['icon'], color: color, size: 28),
-    //           const SizedBox(height: 2),
-    //           Text(
-    //             navItems[index]['label'],
-    //             style: TextStyle(color: color, fontSize: 12),
-    //           ),
-    //         ],
-    //       );
-    //     },
-    //     activeIndex: _bottomNavIndex,
-    //     gapLocation: GapLocation.center,
-    //     notchSmoothness: NotchSmoothness.verySmoothEdge,
-    //     leftCornerRadius: 32,
-    //     rightCornerRadius: 32,
-    //     onTap: (index) => setState(() => _bottomNavIndex = index),
-    //     backgroundColor: Colors.white,
-    //     borderColor: Colors.green,
-    //   ),
-    // );
+
   }
+}
+
+Widget _buildNoInternetScreen() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Icon(Icons.wifi_off, size: 80, color: Colors.grey),
+        Lottie.asset(
+          'assets/icons/no_internet.json',
+          width: 300,
+          height: 500,
+          fit: BoxFit.contain,
+        ),
+        SizedBox(height: 20),
+        Text(
+          'No Internet Connection',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 10),
+        Text(
+          'Please check your internet connection and try again',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        ),
+        SizedBox(height: 20),
+
+      ],
+    ),
+  );
 }
 
 class CategoryItem extends StatelessWidget {
@@ -987,12 +916,26 @@ class SubCategoryScreen extends StatefulWidget {
 class _SubCategoryScreenState extends State<SubCategoryScreen> {
   late Future<List<Details>> _subcategoriesFuture;
 
+  String? _userName;
+
   @override
   void initState() {
     super.initState();
     _subcategoriesFuture = ApiService.fetchSubCategories(widget.categoryId);
+    _loadUserName();
   }
 
+  void _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString('userData');
+
+    if (userDataString != null) {
+      final userData = json.decode(userDataString);
+      setState(() {
+        _userName = userData['name'] ?? 'User'; // or use 'username' based on your key
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

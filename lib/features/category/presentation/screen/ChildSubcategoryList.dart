@@ -648,7 +648,28 @@ class _ChildSubcategoryPostsState extends State<ChildSubcategoryPosts> {
                 }).toList();
 
                 if (filteredPosts.isEmpty) {
-                  return const Center(child: Text("No posts found."));
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.info_outline, // You can use Icons.remove_shopping_cart_outlined if preferred
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'पोस्ट उपलब्ध नाहीत',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
                 }
 
                 return LayoutBuilder(

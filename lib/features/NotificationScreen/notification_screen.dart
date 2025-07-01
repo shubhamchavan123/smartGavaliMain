@@ -17,10 +17,27 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   late List<AppNotification> _allNotifications;
 
+/*
   @override
   void initState() {
     super.initState();
     _allNotifications = [...widget.notifications];
+    _allNotifications.sort((a, b) => b.receivedTime.compareTo(a.receivedTime));
+  }
+*/
+  @override
+  void initState() {
+    super.initState();
+
+    final seen = <String>{};
+    _allNotifications = widget.notifications.where((n) {
+      final key = '${n.title}-${n.cleanBody}';
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
+
+    // Sort: latest notification first
     _allNotifications.sort((a, b) => b.receivedTime.compareTo(a.receivedTime));
   }
 

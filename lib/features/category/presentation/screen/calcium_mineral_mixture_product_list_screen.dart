@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../provider/calcium_mineral_product_provider.dart';
+import '../../../AllScreens/presentation/screen/FullImageScreen.dart';
 import '../../../AllScreens/presentation/screen/MyCartScreen.dart';
 
 // class ProductListScreen extends StatelessWidget {
@@ -404,31 +405,70 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Column(
           children: [
             // Product Image
-            Container(
-              height: 250,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: const Offset(0, 6),
-                  )
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Image.network(
-                  product.image,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.asset(
-                    'assets/images/placeholder.png',
+            // Container(
+            //   height: 250,
+            //   width: double.infinity,
+            //   decoration: BoxDecoration(
+            //     borderRadius: BorderRadius.circular(18),
+            //     boxShadow: [
+            //       BoxShadow(
+            //         color: Colors.black12,
+            //         blurRadius: 10,
+            //         offset: const Offset(0, 6),
+            //       )
+            //     ],
+            //   ),
+            //   child: ClipRRect(
+            //     borderRadius: BorderRadius.circular(18),
+            //     child: Image.network(
+            //       product.image,
+            //       fit: BoxFit.cover,
+            //       errorBuilder: (_, __, ___) => Image.asset(
+            //         'assets/images/placeholder.png',
+            //         fit: BoxFit.cover,
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FullImageScreen(
+                      images: [product.image],
+                      initialIndex: 0,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                height: 250,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: const Offset(0, 6),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.network(
+                    product.image,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Image.asset(
+                      'assets/images/placeholder.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
             // Info Card
@@ -490,7 +530,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 onPressed: () {
                   provider.increment(product);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Product added to cart'),
+                    content: Text('प्रोडक्ट यशस्वीरित्या कार्टमध्ये जोडले गेले'),
                     duration: Duration(seconds: 1),
                   ));
                 },
