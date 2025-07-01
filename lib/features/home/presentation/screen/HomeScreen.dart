@@ -36,7 +36,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   NotificationService notificationService = NotificationService();
-  final GetServerKey _getServerKey = GetServerKey();
+  // final GetServerKey _getServerKey = GetServerKey();
 
   int _bottomNavIndex = 0;
 
