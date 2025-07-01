@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // notificationService.firebaseInit(context);
     // notificationService.setupInteractMessage(context);
     _initializeNotifications();
-    getServiceToken();
+    // getServiceToken();
     fetchData();
     _loadUserName();
     // Listen for new messages and bump the counter
@@ -192,10 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> getServiceToken() async {
-    String serverToken = await _getServerKey.getServerKeyToken();
-    print("Server Token => $serverToken");
-  }
+  // Future<void> getServiceToken() async {
+  //   String serverToken = await _getServerKey.getServerKeyToken();
+  //   print("Server Token => $serverToken");
+  // }
 
   Future<void> fetchData() async {
     try {
