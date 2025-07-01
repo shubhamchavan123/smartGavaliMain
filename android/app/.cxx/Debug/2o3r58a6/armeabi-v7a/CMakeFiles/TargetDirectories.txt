@@ -1,0 +1,2 @@
+/Users/apple/Desktop/gaurav/smartGavali-main/android/app/.cxx/Debug/2o3r58a6/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/apple/Desktop/gaurav/smartGavali-main/android/app/.cxx/Debug/2o3r58a6/armeabi-v7a/CMakeFiles/rebuild_cache.dir
